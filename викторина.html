@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Научная Викторина со Звуком</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #080a14;
+      --panel-bg: rgba(15, 18, 35, 0.82);
+      --card-bg: rgba(22, 27, 50, 0.88);
+      --card-hover: rgba(32, 40, 75, 0.95);
+      --accent-cyan: #00f0ff;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --text-main: #f1f5f9;
+      --text-muted: #64748b;
+      
+      --tag-bg: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Roboto', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Холст нейросети на заднем фоне */
+    #networkCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 50%, #080a18 0%, #04050a 100%);
+    }
+
+    /* Модальное окно для ввода имени */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 6, 12, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-cyan);
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+    }
+
+    .modal-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent-cyan);
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    .name-input {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      background: rgba(8, 10, 20, 0.8);
+      color: var(--text-main);
+      font-size: 1rem;
+      outline: none;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .name-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+
+    .start-btn {
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), #00a8ff);
+      border: none;
+      color: #080a14;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    }
+
+    .app-layout {
+      width: 100%;
+      max-width: 1000px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      z-index: 1;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: center;
+      color: var(--accent-cyan);
+      margin-bottom: 5px;
+    }
+
+    .player-display {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .player-display:hover {
+      color: var(--accent-cyan);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent-cyan);
+    }
+
+    .stat-value.amber { color: var(--accent-amber); }
+    .stat-value.green { color: var(--accent-green); }
+    .stat-value.red { color: var(--accent-red); }
+
+    .section-subtitle {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .subject-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .subject-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .subject-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    .subject-name {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .subject-percent {
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-cyan);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .reset-btn {
+      margin-top: auto;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      padding: 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .reset-btn:hover {
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .quiz-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .music-btn {
+      background: rgba(22, 27, 50, 0.8);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--accent-cyan);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .music-btn:hover {
+      background: var(--accent-cyan);
+      color: #080a14;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .quiz-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #00f0ff, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subject-tag {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #fff;
+      background-color: var(--tag-bg);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .question-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 25px 20px;
+      margin-bottom: 20px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+    }
+
+    .question-text {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: var(--text-main);
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-btn {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: var(--card-hover);
+      border-color: rgba(0, 240, 255, 0.3);
+      transform: translateX(3px);
+    }
+
+    .option-btn.correct {
+      background: rgba(16, 185, 129, 0.2) !important;
+      border-color: var(--accent-green) !important;
+      color: #4ade80 !important;
+    }
+
+    .option-btn.wrong {
+      background: rgba(239, 68, 68, 0.2) !important;
+      border-color: var(--accent-red) !important;
+      color: #f87171 !important;
+    }
+
+    @media (max-width: 768px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Динамическая нейросеть -->
+  <canvas id="networkCanvas"></canvas>
+
+  <!-- Окно ввода имени -->
+  <div class="modal-overlay" id="nameModal">
+    <div class="modal-card">
+      <div class="modal-title">Добро пожаловать!</div>
+      <input type="text" class="name-input" id="playerNameInput" placeholder="Введите ваше имя" maxlength="15">
+      <button class="start-btn" id="startGameBtn">Начать игру</button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <div class="panel">
+      <div class="panel-header-title">Статистика</div>
+      <div class="player-display" id="playerDisplay" title="Нажмите, чтобы сменить имя">Игрок: Игрок</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Баллы</div>
+          <div class="stat-value" id="statScore">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Точность</div>
+          <div class="stat-value amber" id="statAccuracy">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Верно</div>
+          <div class="stat-value green" id="statCorrect">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ошибки</div>
+          <div class="stat-value red" id="statWrong">0</div>
+        </div>
+      </div>
+
+      <div class="section-subtitle">Успехи по предметам</div>
+      
+      <div class="subject-list" id="subjectList"></div>
+
+      <button class="reset-btn" id="resetBtn">Сбросить статистику</button>
+    </div>
+
+    <div class="panel">
+      <div class="quiz-panel-header">
+        <div class="quiz-title">Научная Викторина</div>
+        <div class="header-controls">
+          <button class="music-btn" id="musicToggle" title="Включить/Выключить музыку">🎵</button>
+          <span class="subject-tag" id="subjectTag">Физика</span>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <div class="question-text" id="questionText">Загрузка вопроса...</div>
+      </div>
+
+      <div class="options-list" id="optionsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- ДИНАМИЧЕСКАЯ НЕЙРОСЕТЬ (CANVAS) ---
+    const canvas = document.getElementById('networkCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let particles = [];
+    const maxParticles = 80;
+    const maxDistance = 120;
+    let mouse = { x: null, y: null, radius: 150 };
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.x;
+      mouse.y = e.y;
+    });
+
+    window.addEventListener('mouseleave', () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = (Math.random() - 0.5) * 1.2;
+        this.radius = Math.random() * 2 + 1;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+        if (mouse.x && mouse.y) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouse.radius) {
+            const force = (mouse.radius - dist) / mouse.radius;
+            this.x -= (dx / dist) * force * 2;
+            this.y -= (dy / dist) * force * 2;
+          }
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#00f0ff';
+        ctx.fill();
+      }
+    }
+
+    function initNetwork() {
+      particles = [];
+      for (let i = 0; i < maxParticles; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animateNetwork() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < maxDistance) {
+            const alpha = 1 - dist / maxDistance;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.25})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animateNetwork);
+    }
+
+    initNetwork();
+    animateNetwork();
+
+    // --- ЗВУКОВАЯ СИСТЕМА И КОСМИЧЕСКАЯ МУЗЫКА ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let spaceMusicNodes = null;
+    let isMusicPlaying = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Генерация фоновой космической музыки через Web Audio API
+    function startSpaceMusic() {
+      initAudio();
+      if (isMusicPlaying) return;
+
+      const masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.04, audioCtx.currentTime); // Мягкая громкость фона
+
+      // Частоты басового и атмосферного космического аккорда (C-G-D-A)
+      const freqs = [65.41, 98.00, 146.83, 220.00];
+      const oscillators = [];
+
+      freqs.forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const lfo = audioCtx.createOscillator(); // Плавная пульсация
+        const lfoGain = audioCtx.createGain();
+
+        osc.type = index % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        // LFO для создания эффекта глубокого дышащего пространства
+        lfo.frequency.setValueAtTime(0.1 + index * 0.05, audioCtx.currentTime);
+        lfoGain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+        lfo.connect(gain.gain);
+
+        gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start();
+        lfo.start();
+        oscillators.push({ osc, lfo });
+      });
+
+      // Низкочастотный фильтр для создания мягкого "космического" звука
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(350, audioCtx.currentTime);
+
+      masterGain.connect(filter);
+      filter.connect(audioCtx.destination);
+
+      spaceMusicNodes = { masterGain, oscillators };
+      isMusicPlaying = true;
+      document.getElementById('musicToggle').textContent = '🔊';
+    }
+
+    function stopSpaceMusic() {
+      if (!isMusicPlaying || !spaceMusicNodes) return;
+      spaceMusicNodes.masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+      setTimeout(() => {
+        spaceMusicNodes.oscillators.forEach(item => {
+          item.osc.stop();
+          item.lfo.stop();
+        });
+        spaceMusicNodes = null;
+        isMusicPlaying = false;
+        document.getElementById('musicToggle').textContent = '🔇';
+      }, 500);
+    }
+
+    function toggleMusic() {
+      if (isMusicPlaying) {
+        stopSpaceMusic();
+      } else {
+        startSpaceMusic();
+      }
+    }
+
+    document.getElementById('musicToggle').addEventListener('click', toggleMusic);
+
+    function playFanfareSound() {
+      initAudio();
+      const notes = [
+        { f: 523.25, t: 0 },
+        { f: 659.25, t: 0.12 },
+        { f: 783.99, t: 0.24 },
+        { f: 1046.50, t: 0.36 }
+      ];
+
+      notes.forEach(note => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(note.f, audioCtx.currentTime + note.t);
+
+        const duration = note.t === 0.36 ? 0.4 : 0.1;
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime + note.t);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + note.t + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(audioCtx.currentTime + note.t);
+        osc.stop(audioCtx.currentTime + note.t + duration);
+      });
+    }
+
+    function playKittenSound() {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const now = audioCtx.currentTime;
+
+      osc.type = 'sine';
+
+      osc.frequency.setValueAtTime(700, now);
+      osc.frequency.exponentialRampToValueAtTime(1050, now + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(550, now + 0.45);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.45);
+    }
+
+    // --- ЛОГИКА ВИКТОРИНЫ ---
+    const questions = [
+      {
+        subject: "Физика",
+        question: "С какой скоростью свет распространяется в вакууме?",
+        options: ["Около 300 000 км/с", "Около 150 000 км/с", "Около 1 000 000 км/с"],
+        correct: 0
+      },
+      {
+        subject: "Физика",
+        question: "Сколько времени требуется свету, чтобы дойти от Солнца до Земли?",
+        options: ["Около 8 минут", "Мгновенно", "Около 1 часа"],
+        correct: 0
+      },
+      {
+        subject: "Физика",
+        question: "Чему равна температура абсолютного нуля по шкале Цельсия?",
+        options: ["-273.15 °C", "-100 °C", "0 °C"],
+        correct: 0
+      },
+      {
+        subject: "Физика",
+        question: "Где звук распространяется быстрее?",
+        options: ["В воде", "В воздухе", "В вакууме"],
+        correct: 0
+      },
+      {
+        subject: "Химия",
+        question: "Какой металл является единственным жидким при комнатной температуре?",
+        options: ["Ртуть", "Галлий", "Свинец"],
+        correct: 0
+      },
+      {
+        subject: "Химия",
+        question: "Из какого химического элемента состоят и алмаз, и графит?",
+        options: ["Углерод", "Кремний", "Железо"],
+        correct: 0
+      },
+      {
+        subject: "Химия",
+        question: "Какое химическое вещество имеет формулу H₂O?",
+        options: ["Вода", "Перекись водорода", "Углекислый газ"],
+        correct: 0
+      },
+      {
+        subject: "Биология",
+        question: "Сколько сердец у осьминога?",
+        options: ["3", "1", "2"],
+        correct: 0
+      },
+      {
+        subject: "Биология",
+        question: "Какое растение является самым быстрорастущим в мире?",
+        options: ["Бамбук", "Замиокулькас", "Эвкалипт"],
+        correct: 0
+      },
+      {
+        subject: "Астрономия",
+        question: "На какой планете Солнечной системы день длится дольше года?",
+        options: ["Венера", "Марс", "Меркурий"],
+        correct: 0
+      },
+      {
+        subject: "География",
+        question: "Какой океан является самым большим по площади?",
+        options: ["Тихий океан", "Атлантический океан", "Индийский океан"],
+        correct: 0
+      },
+      {
+        subject: "Математика",
+        question: "Какое число нельзя записать римскими цифрами?",
+        options: ["Ноль (0)", "Один (I)", "Тысячу (M)"],
+        correct: 0
+      }
+    ];
+
+    const subjects = ["Физика", "Химия", "Биология", "Астрономия", "География", "Математика"];
+
+    let state = {
+      playerName: "Игрок",
+      score: 0,
+      correct: 0,
+      wrong: 0,
+      subjectStats: {}
+    };
+
+    let availableQuestions = [];
+    let currentQuestion = null;
+    let isAnswering = false;
+
+    subjects.forEach(subj => {
+      state.subjectStats[subj] = { correct: 0, total: 0 };
+    });
+
+    const nameModal = document.getElementById('nameModal');
+    const playerNameInput = document.getElementById('playerNameInput');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const playerDisplay = document.getElementById('playerDisplay');
+
+    const statScore = document.getElementById('statScore');
+    const statAccuracy = document.getElementById('statAccuracy');
+    const statCorrect = document.getElementById('statCorrect');
+    const statWrong = document.getElementById('statWrong');
+    const subjectList = document.getElementById('subjectList');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const subjectTag = document.getElementById('subjectTag');
+    const questionText = document.getElementById('questionText');
+    const optionsContainer = document.getElementById('optionsContainer');
+
+    function setPlayerName() {
+      const name = playerNameInput.value.trim();
+      if (name) {
+        state.playerName = name;
+      } else {
+        state.playerName = "Игрок";
+      }
+      playerDisplay.textContent = `Игрок: ${state.playerName}`;
+      nameModal.classList.add('hidden');
+      startSpaceMusic();
+    }
+
+    startGameBtn.addEventListener('click', setPlayerName);
+    playerNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') setPlayerName();
+    });
+
+    playerDisplay.addEventListener('click', () => {
+      playerNameInput.value = state.playerName;
+      nameModal.classList.remove('hidden');
+    });
+
+    function renderSubjectList() {
+      subjectList.innerHTML = '';
+      subjects.forEach(subj => {
+        const data = state.subjectStats[subj];
+        const percent = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+
+        const item = document.createElement('div');
+        item.className = 'subject-item';
+        item.innerHTML = `
+          <div class="subject-info">
+            <span class="subject-name">${subj}</span>
+            <span class="subject-percent">${data.correct}/${data.total} (${percent}%)</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${percent}%"></div>
+          </div>
+        `;
+        subjectList.appendChild(item);
+      });
+    }
+
+    function updateStats() {
+      statScore.textContent = state.score;
+      statCorrect.textContent = state.correct;
+      statWrong.textContent = state.wrong;
+
+      const totalAttempts = state.correct + state.wrong;
+      const acc = totalAttempts > 0 ? Math.round((state.correct / totalAttempts) * 100) : 0;
+      statAccuracy.textContent = `${acc}%`;
+
+      renderSubjectList();
+    }
+
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function loadNextQuestion() {
+      isAnswering = false;
+
+      if (availableQuestions.length === 0) {
+        availableQuestions = [...questions];
+      }
+
+      const index = Math.floor(Math.random() * availableQuestions.length);
+      currentQuestion = availableQuestions.splice(index, 1)[0];
+
+      const originalCorrectOption = currentQuestion.options[currentQuestion.correct];
+      const shuffledOptions = shuffleArray(currentQuestion.options);
+      const newCorrectIndex = shuffledOptions.indexOf(originalCorrectOption);
+
+      subjectTag.textContent = currentQuestion.subject;
+      questionText.textContent = currentQuestion.question;
+
+      optionsContainer.innerHTML = '';
+      shuffledOptions.forEach((optText, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = optText;
+        btn.addEventListener('click', () => handleAnswer(i, newCorrectIndex));
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(selectedIndex, correctIndex) {
+      if (isAnswering) return;
+      isAnswering = true;
+
+      const buttons = optionsContainer.querySelectorAll('.option-btn');
+      const subj = currentQuestion.subject;
+
+      state.subjectStats[subj].total++;
+
+      if (selectedIndex === correctIndex) {
+        playFanfareSound();
+        buttons[selectedIndex].classList.add('correct');
+        state.score += 10;
+        state.correct++;
+        state.subjectStats[subj].correct++;
+      } else {
+        playKittenSound();
+        buttons[selectedIndex].classList.add('wrong');
+        buttons[correctIndex].classList.add('correct');
+        state.wrong++;
+      }
+
+      updateStats();
+
+      setTimeout(() => {
+        loadNextQuestion();
+      }, 1200);
+    }
+
+    resetBtn.addEventListener('click', () => {
+      state.score = 0;
+      state.correct = 0;
+      state.wrong = 0;
+      subjects.forEach(subj => {
+        state.subjectStats[subj] = { correct: 0, total: 0 };
+      });
+      availableQuestions = [...questions];
+      updateStats();
+      loadNextQuestion();
+    });
+
+    updateStats();
+    loadNextQuestion();
+  </script>
+</body>
+</html>

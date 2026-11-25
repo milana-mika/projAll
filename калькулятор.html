@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мульти-Портал Приложений</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#06b6d4',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        /* Ambient Glassmorphism styling */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-card {
+            background: rgba(241, 245, 249, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            transition: all 0.2s ease;
+        }
+
+        .light .glass-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            color: #0f172a;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+
+        /* Background Glow Animation */
+        @keyframes ambientGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .animated-bg {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #172554, #0f172a);
+            background-size: 400% 400%;
+            animation: ambientGlow 22s ease infinite;
+        }
+
+        .light .animated-bg {
+            background: linear-gradient(-45deg, #f1f5f9, #e2e8f0, #e0f2fe, #f1f5f9);
+            background-size: 400% 400%;
+            animation: ambientGlow 22s ease infinite;
+        }
+
+        .nav-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+    </style>
+</head>
+<body class="animated-bg text-slate-100 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row overflow-x-hidden select-none transition-colors duration-300">
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed top-5 right-5 z-50 flex items-center space-x-3 bg-slate-900/90 dark:bg-slate-900/90 text-white px-5 py-3.5 rounded-2xl border border-slate-700/80 shadow-2xl transition-all duration-300 transform translate-y-[-150%] opacity-0 backdrop-blur-md">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">Операция выполнена</span>
+    </div>
+
+    <!-- Mobile Header -->
+    <header class="md:hidden glass-panel flex items-center justify-between px-5 py-3.5 sticky top-0 z-40 border-b border-slate-800 dark:border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-cubes text-white text-lg"></i>
+            </div>
+            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 dark:from-white dark:via-slate-200 dark:to-slate-400 bg-clip-text text-transparent">МультиПортал</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleTheme()" class="p-2 rounded-xl glass-card text-slate-300 dark:text-slate-300 hover:text-white">
+                <i id="themeIconMobile" class="fa-solid fa-moon"></i>
+            </button>
+            <span id="mobileAppTitle" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 border border-cyan-500/20">
+                ИМТ
+            </span>
+        </div>
+    </header>
+
+    <!-- Sidebar Navigation (Desktop) -->
+    <aside class="hidden md:flex flex-col w-64 glass-panel min-h-screen p-5 z-30 border-r border-slate-800 dark:border-slate-800 justify-between shrink-0">
+        <div>
+            <!-- Logo Header -->
+            <div class="flex items-center justify-between mb-8 px-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                        <i class="fa-solid fa-cubes text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">МультиПортал</h1>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Центр Приложений</p>
+                    </div>
+                </div>
+                <button onclick="toggleTheme()" title="Переключить тему" class="p-2 rounded-xl glass-card text-slate-600 dark:text-slate-300 hover:text-cyan-400 transition">
+                    <i id="themeIconDesktop" class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="space-y-1.5" id="desktopNav">
+                <button onclick="switchTab('bmi')" data-tab="bmi" class="nav-btn active w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-weight-scale w-5 text-center text-cyan-500 dark:text-cyan-400"></i>
+                    <span>Калькулятор ИМТ</span>
+                </button>
+                <button onclick="switchTab('password')" data-tab="password" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-key w-5 text-center text-amber-500 dark:text-amber-400"></i>
+                    <span>Генератор паролей</span>
+                </button>
+                <button onclick="switchTab('converter')" data-tab="converter" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-arrows-rotate w-5 text-center text-emerald-500 dark:text-emerald-400"></i>
+                    <span>Конвертер величин</span>
+                </button>
+                <button onclick="switchTab('notes')" data-tab="notes" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-note-sticky w-5 text-center text-purple-500 dark:text-purple-400"></i>
+                    <span>Заметки & Идеи</span>
+                </button>
+                <button onclick="switchTab('habits')" data-tab="habits" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-calendar-check w-5 text-center text-rose-500 dark:text-rose-400"></i>
+                    <span>Трекер привычек</span>
+                </button>
+                <button onclick="switchTab('timer')" data-tab="timer" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition duration-200 font-medium text-sm text-left">
+                    <i class="fa-solid fa-stopwatch w-5 text-center text-indigo-500 dark:text-indigo-400"></i>
+                    <span>Интервальный таймер</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- App Footer Info -->
+        <div class="p-3 rounded-xl glass-card border border-slate-200 dark:border-white/5 text-xs text-slate-500 dark:text-slate-400 text-center">
+            <p>Все данные сохраняются локально в вашем браузере.</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Work Area -->
+    <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 overflow-y-auto">
+
+        <!-- Module 1: BMI Calculator -->
+        <section id="app-bmi" class="tab-content block space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-weight-scale text-cyan-500 dark:text-cyan-400"></i> Калькулятор ИМТ
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Рассчитайте индекс массы тела и отслеживайте прогресс</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Input Panel -->
+                <div class="lg:col-span-6 glass-panel rounded-2xl p-6 space-y-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Рост (см)</label>
+                            <input type="number" id="bmiHeightNum" value="175" min="100" max="230" class="w-20 glass-input px-2.5 py-1 rounded-lg text-center font-bold text-cyan-500 dark:text-cyan-400">
+                        </div>
+                        <input type="range" id="bmiHeight" min="100" max="230" value="175" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 dark:accent-cyan-400">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Вес (кг)</label>
+                            <input type="number" id="bmiWeightNum" value="70" min="30" max="200" class="w-20 glass-input px-2.5 py-1 rounded-lg text-center font-bold text-cyan-500 dark:text-cyan-400">
+                        </div>
+                        <input type="range" id="bmiWeight" min="30" max="200" value="70" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 dark:accent-cyan-400">
+                    </div>
+
+                    <div class="pt-2">
+                        <button onclick="saveBmiRecord()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/20 active:scale-[0.99] transition duration-200">
+                            <i class="fa-solid fa-bookmark mr-2"></i> Сохранить в историю
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display Panel -->
+                <div class="lg:col-span-6 glass-panel rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="text-center py-4">
+                        <span class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Ваш индекс ИМТ</span>
+                        <div id="bmiValue" class="text-5xl font-black text-slate-800 dark:text-white my-3 tracking-tight">22.9</div>
+                        <span id="bmiCategory" class="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                            Нормальный вес
+                        </span>
+                    </div>
+
+                    <div class="p-4 rounded-xl glass-card border border-slate-200 dark:border-slate-700/50 space-y-2">
+                        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Идеальный диапазон веса:</span>
+                            <span id="bmiIdealWeight" class="font-bold text-cyan-600 dark:text-cyan-300">56.7 кг - 76.6 кг</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700/50 h-2.5 rounded-full overflow-hidden flex">
+                            <div class="bg-sky-400 h-full w-[18.5%]" title="Дефицит"></div>
+                            <div class="bg-emerald-400 h-full w-[25%]" title="Норма"></div>
+                            <div class="bg-amber-400 h-full w-[25%]" title="Избыток"></div>
+                            <div class="bg-rose-500 h-full w-[31.5%]" title="Ожирение"></div>
+                        </div>
+                    </div>
+
+                    <!-- History Log -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">История измерений</h3>
+                            <button onclick="clearBmiHistory()" class="text-xs text-slate-500 hover:text-rose-500 transition">Очистить</button>
+                        </div>
+                        <div id="bmiHistoryList" class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 2: Password Generator -->
+        <section id="app-password" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-key text-amber-500 dark:text-amber-400"></i> Генератор паролей
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Создавайте стойкие и защищенные пароли в один клик</p>
+                </div>
+            </div>
+
+            <div class="max-w-2xl mx-auto glass-panel rounded-2xl p-6 md:p-8 space-y-6">
+                <!-- Output Field -->
+                <div class="relative">
+                    <input type="text" id="passOutput" readonly class="w-full glass-input py-4 pl-4 pr-28 text-lg font-mono font-bold tracking-wider rounded-xl text-amber-600 dark:text-amber-300" placeholder="Пароль появится здесь">
+                    <button onclick="copyPassword()" class="absolute right-2 top-2 bottom-2 px-4 bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-300 border border-amber-500/30 rounded-lg font-medium text-sm transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Копировать</span>
+                    </button>
+                </div>
+
+                <!-- Strength Meter -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-medium">
+                        <span class="text-slate-500 dark:text-slate-400">Надежность пароля:</span>
+                        <span id="passStrengthText" class="text-amber-500 dark:text-amber-400 font-bold">Средняя</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div id="passStrengthBar" class="h-full bg-amber-400 transition-all duration-300 w-1/2"></div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="space-y-5 pt-2">
+                    <div>
+                        <div class="flex justify-between text-sm font-medium mb-2">
+                            <span class="text-slate-700 dark:text-slate-300">Длина пароля:</span>
+                            <span id="passLengthVal" class="text-amber-500 dark:text-amber-400 font-bold">16</span>
+                        </div>
+                        <input type="range" id="passLength" min="4" max="64" value="16" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500 dark:accent-amber-400">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <label class="flex items-center space-x-3 p-3 rounded-xl glass-card hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" id="passUppercase" checked class="w-4 h-4 rounded accent-amber-500 dark:accent-amber-400 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Заглавные буквы (A-Z)</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-xl glass-card hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" id="passLowercase" checked class="w-4 h-4 rounded accent-amber-500 dark:accent-amber-400 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Строчные буквы (a-z)</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-xl glass-card hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" id="passNumbers" checked class="w-4 h-4 rounded accent-amber-500 dark:accent-amber-400 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Цифры (0-9)</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-xl glass-card hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" id="passSymbols" checked class="w-4 h-4 rounded accent-amber-500 dark:accent-amber-400 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Спецсимволы (!@#$)</span>
+                        </label>
+                    </div>
+
+                    <button onclick="generatePassword()" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white dark:text-slate-950 font-bold shadow-lg shadow-amber-500/20 active:scale-[0.99] transition duration-200">
+                        <i class="fa-solid fa-arrows-rotate mr-2"></i> Сгенерировать новый пароль
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 3: Unit Converter -->
+        <section id="app-converter" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate text-emerald-500 dark:text-emerald-400"></i> Конвертер величин
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Мгновенный перевод времени, длины, массы и других величин</p>
+                </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto glass-panel rounded-2xl p-6 md:p-8 space-y-6">
+                <!-- Category Tabs -->
+                <div class="flex p-1 bg-slate-200/60 dark:bg-slate-900/60 rounded-xl border border-slate-300 dark:border-slate-800 overflow-x-auto gap-1">
+                    <button onclick="setConverterCategory('time')" id="catBtn-time" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-white bg-emerald-500/80 dark:bg-emerald-500/20 border border-emerald-500/30 whitespace-nowrap">
+                        <i class="fa-solid fa-clock mr-1.5"></i> Время
+                    </button>
+                    <button onclick="setConverterCategory('length')" id="catBtn-length" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-ruler mr-1.5"></i> Длина
+                    </button>
+                    <button onclick="setConverterCategory('mass')" id="catBtn-mass" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-weight-hanging mr-1.5"></i> Масса
+                    </button>
+                    <button onclick="setConverterCategory('temp')" id="catBtn-temp" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-temperature-half mr-1.5"></i> Температура
+                    </button>
+                    <button onclick="setConverterCategory('volume')" id="catBtn-volume" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-glass-water mr-1.5"></i> Объём
+                    </button>
+                    <button onclick="setConverterCategory('area')" id="catBtn-area" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-vector-square mr-1.5"></i> Площадь
+                    </button>
+                    <button onclick="setConverterCategory('speed')" id="catBtn-speed" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-gauge-high mr-1.5"></i> Скорость
+                    </button>
+                    <button onclick="setConverterCategory('data')" id="catBtn-data" class="flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-database mr-1.5"></i> Данные
+                    </button>
+                </div>
+
+                <!-- Conversion Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center pt-2">
+                    <!-- From -->
+                    <div class="md:col-span-5 space-y-2">
+                        <label class="text-xs text-slate-500 dark:text-slate-400 font-medium">Исходное значение</label>
+                        <input type="number" id="convInput" value="1" step="any" class="w-full glass-input p-3.5 rounded-xl text-lg font-bold">
+                        <select id="convFromUnit" class="w-full glass-input p-3 rounded-xl text-sm font-medium">
+                            <!-- Dynamic Options -->
+                        </select>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div class="md:col-span-1 flex justify-center py-2 md:py-0">
+                        <button onclick="swapUnits()" title="Поменять местами" class="w-10 h-10 rounded-full glass-card hover:bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition">
+                            <i class="fa-solid fa-right-left"></i>
+                        </button>
+                    </div>
+
+                    <!-- To -->
+                    <div class="md:col-span-5 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs text-slate-500 dark:text-slate-400 font-medium">Результат</label>
+                            <button onclick="copyConvResult()" class="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-medium flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> Скопировать
+                            </button>
+                        </div>
+                        <input type="text" id="convResult" readonly class="w-full glass-input p-3.5 rounded-xl text-lg font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-950/20" value="0">
+                        <select id="convToUnit" class="w-full glass-input p-3 rounded-xl text-sm font-medium">
+                            <!-- Dynamic Options -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 4: Notes App -->
+        <section id="app-notes" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-note-sticky text-purple-500 dark:text-purple-400"></i> Заметки & Идеи
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Организуйте свои мысли, задачи и быстрые записи</p>
+                </div>
+                <button onclick="openNoteModal()" class="py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm shadow-lg shadow-purple-500/20 flex items-center gap-2 self-start sm:self-auto">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Новая заметка</span>
+                </button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="glass-panel p-3 rounded-xl flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="noteSearch" placeholder="Поиск заметок..." class="w-full glass-input pl-10 pr-4 py-2.5 rounded-lg text-sm">
+                </div>
+            </div>
+
+            <!-- Notes Grid -->
+            <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic Content -->
+            </div>
+        </section>
+
+        <!-- Module 5: Habit Tracker -->
+        <section id="app-habits" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-check text-rose-500 dark:text-rose-400"></i> Трекер привычек
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Формируйте полезные привычки ежедневно</p>
+                </div>
+                <button onclick="openHabitModal()" class="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-sm shadow-lg shadow-rose-500/20 flex items-center gap-2 self-start sm:self-auto">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Добавить привычку</span>
+                </button>
+            </div>
+
+            <!-- Overall Progress -->
+            <div class="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div class="space-y-1 text-center sm:text-left">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Прогресс на сегодня</h3>
+                    <p id="habitProgressSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Выполнено 0 из 0 привычек</p>
+                </div>
+                <div class="w-full sm:w-64 space-y-2">
+                    <div class="flex justify-between text-xs font-bold text-rose-500 dark:text-rose-400">
+                        <span>Завершено</span>
+                        <span id="habitProgressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
+                        <div id="habitProgressBar" class="bg-gradient-to-r from-rose-500 to-pink-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Habit List -->
+            <div id="habitsList" class="space-y-3">
+                <!-- Dynamic Content -->
+            </div>
+        </section>
+
+        <!-- Module 6: Interval Timer -->
+        <section id="app-timer" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-indigo-500 dark:text-indigo-400"></i> Интервальный таймер
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Гибкая настройка работы, отдыха, циклов и больших перерывов</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Config Panel -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <h3 class="font-bold text-slate-800 dark:text-white text-base">Настройка интервалов</h3>
+                        <button onclick="resetTimerSettings()" class="text-xs text-indigo-500 hover:text-indigo-400 transition font-medium">Сброс</button>
+                    </div>
+
+                    <!-- Work Duration -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span><i class="fa-solid fa-fire text-rose-500 mr-1"></i> Работа (сек)</span>
+                            <span id="val-work" class="text-indigo-500 dark:text-indigo-400 font-bold">30s</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('work', -5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-work" min="5" max="300" step="5" value="30" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('work', 5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Rest Duration -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span><i class="fa-solid fa-mug-hot text-emerald-500 mr-1"></i> Отдых (сек)</span>
+                            <span id="val-rest" class="text-indigo-500 dark:text-indigo-400 font-bold">10s</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('rest', -5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-rest" min="0" max="180" step="5" value="10" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('rest', 5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Prepare Duration -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span><i class="fa-solid fa-hourglass-start text-amber-500 mr-1"></i> Подготовка (сек)</span>
+                            <span id="val-prep" class="text-indigo-500 dark:text-indigo-400 font-bold">5s</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('prep', -1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-prep" min="0" max="30" step="1" value="5" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('prep', 1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Rounds Count -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span><i class="fa-solid fa-arrows-spin text-purple-500 mr-1"></i> Подходы (сеты)</span>
+                            <span id="val-rounds" class="text-indigo-500 dark:text-indigo-400 font-bold">8</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('rounds', -1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-rounds" min="1" max="30" step="1" value="8" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('rounds', 1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Long Rest Duration -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span><i class="fa-solid fa-bed text-cyan-500 mr-1"></i> Длинный отдых (сек)</span>
+                            <span id="val-longRest" class="text-indigo-500 dark:text-indigo-400 font-bold">30s</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('longRest', -5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-longRest" min="0" max="300" step="5" value="30" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('longRest', 5)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Long Rest Frequency -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span>Каждые N подходов:</span>
+                            <span id="val-longRestInterval" class="text-indigo-500 dark:text-indigo-400 font-bold">4</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="adjSetting('longRestInterval', -1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">-</button>
+                            <input type="range" id="inp-longRestInterval" min="2" max="10" step="1" value="4" class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <button onclick="adjSetting('longRestInterval', 1)" class="w-8 h-8 rounded-lg glass-card font-bold text-slate-700 dark:text-white hover:bg-indigo-500/20">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Presets -->
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <span class="text-xs text-slate-500 dark:text-slate-400 block mb-2 font-medium">Быстрые пресеты:</span>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <button onclick="applyTimerPreset(20, 10, 8, 5, 30, 4)" class="py-1.5 px-2 glass-card hover:bg-indigo-500/20 rounded-lg text-slate-700 dark:text-slate-300">Табата (20/10)</button>
+                            <button onclick="applyTimerPreset(45, 15, 6, 5, 60, 3)" class="py-1.5 px-2 glass-card hover:bg-indigo-500/20 rounded-lg text-slate-700 dark:text-slate-300">HIIT (45/15)</button>
+                            <button onclick="applyTimerPreset(50, 10, 4, 3, 120, 2)" class="py-1.5 px-2 glass-card hover:bg-indigo-500/20 rounded-lg text-slate-700 dark:text-slate-300">Помодоро</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Panel -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-6 md:p-8 flex flex-col justify-between items-center text-center space-y-6">
+                    <div class="w-full flex justify-between items-center text-xs font-semibold px-2">
+                        <span id="timerCurrentRound" class="px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Подход: 1 / 8</span>
+                        <span id="timerTotalRemaining" class="text-slate-500 dark:text-slate-400">Осталось: --:--</span>
+                    </div>
+
+                    <div class="relative py-4 w-full">
+                        <span id="timerPhaseBadge" class="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30">
+                            ПОДГОТОВКА
+                        </span>
+                        <div id="timerDisplay" class="text-7xl md:text-8xl font-black tracking-tight text-slate-800 dark:text-white font-mono my-2">
+                            00:05
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 h-3 rounded-full overflow-hidden mt-6">
+                            <div id="timerStepProgressBar" class="bg-indigo-500 h-full w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <!-- Live Parameter Cards -->
+                    <div class="grid grid-cols-3 gap-3 w-full text-xs">
+                        <div class="glass-card p-3 rounded-xl">
+                            <span class="block text-slate-500 dark:text-slate-400 mb-0.5">Работа</span>
+                            <span id="liveWorkVal" class="font-bold text-rose-500 dark:text-rose-400 text-sm">30s</span>
+                        </div>
+                        <div class="glass-card p-3 rounded-xl">
+                            <span class="block text-slate-500 dark:text-slate-400 mb-0.5">Отдых</span>
+                            <span id="liveRestVal" class="font-bold text-emerald-500 dark:text-emerald-400 text-sm">10s</span>
+                        </div>
+                        <div class="glass-card p-3 rounded-xl">
+                            <span class="block text-slate-500 dark:text-slate-400 mb-0.5">Дл. Отдых</span>
+                            <span id="liveLongRestVal" class="font-bold text-cyan-500 dark:text-cyan-400 text-sm">30s</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="flex items-center justify-center gap-4">
+                        <button id="timerToggleBtn" onclick="toggleTimer()" class="w-40 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/20 transition">
+                            <i class="fa-solid fa-play mr-1.5"></i> Старт
+                        </button>
+                        <button onclick="resetTimer()" title="Сбросить" class="w-12 h-12 rounded-xl glass-card hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 flex items-center justify-center transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200 dark:border-slate-800 z-40 px-2 py-2 flex justify-around">
+        <button onclick="switchTab('bmi')" data-tab="bmi" class="nav-btn active flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-weight-scale text-base mb-1"></i>
+            <span class="text-[10px]">ИМТ</span>
+        </button>
+        <button onclick="switchTab('password')" data-tab="password" class="nav-btn flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-key text-base mb-1"></i>
+            <span class="text-[10px]">Пароли</span>
+        </button>
+        <button onclick="switchTab('converter')" data-tab="converter" class="nav-btn flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-arrows-rotate text-base mb-1"></i>
+            <span class="text-[10px]">Перевод</span>
+        </button>
+        <button onclick="switchTab('notes')" data-tab="notes" class="nav-btn flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-note-sticky text-base mb-1"></i>
+            <span class="text-[10px]">Заметки</span>
+        </button>
+        <button onclick="switchTab('habits')" data-tab="habits" class="nav-btn flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-calendar-check text-base mb-1"></i>
+            <span class="text-[10px]">Привычки</span>
+        </button>
+        <button onclick="switchTab('timer')" data-tab="timer" class="nav-btn flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 text-xs">
+            <i class="fa-solid fa-stopwatch text-base mb-1"></i>
+            <span class="text-[10px]">Таймер</span>
+        </button>
+    </nav>
+
+    <!-- Modal for Notes -->
+    <div id="noteModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-700">
+                <h3 class="text-lg font-bold text-white" id="noteModalTitle">Новая заметка</h3>
+                <button onclick="closeNoteModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="noteEditId">
+            <input type="text" id="noteTitleInput" placeholder="Заголовок заметки" class="w-full glass-input p-3 rounded-xl text-sm font-semibold">
+            <textarea id="noteContentInput" rows="4" placeholder="Текст заметки..." class="w-full glass-input p-3 rounded-xl text-sm"></textarea>
+            <div class="flex gap-2">
+                <select id="noteCategorySelect" class="glass-input p-2.5 rounded-xl text-xs font-medium flex-1">
+                    <option value="purple">Работа (Фиолетовый)</option>
+                    <option value="cyan">Идеи (Голубой)</option>
+                    <option value="emerald">Учеба (Зеленый)</option>
+                    <option value="amber">Личное (Желтый)</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeNoteModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">Отмена</button>
+                <button onclick="saveNote()" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Habits -->
+    <div id="habitModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-700">
+                <h3 class="text-lg font-bold text-white">Новая привычка</h3>
+                <button onclick="closeHabitModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="text" id="habitTitleInput" placeholder="Название привычки (напр., Пить 2л воды)" class="w-full glass-input p-3 rounded-xl text-sm font-semibold">
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeHabitModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">Отмена</button>
+                <button onclick="saveHabit()" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT LOGIC -->
+    <script>
+        // --- THEME & NAVIGATION ENGINE ---
+        const tabTitles = {
+            'bmi': 'ИМТ',
+            'password': 'Пароли',
+            'converter': 'Конвертер',
+            'notes': 'Заметки',
+            'habits': 'Привычки',
+            'timer': 'Таймер'
+        };
+
+        window.initTheme = function() {
+            const isDark = localStorage.getItem('portal_theme') !== 'light';
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+                document.getElementById('themeIconDesktop').className = 'fa-solid fa-sun text-amber-400';
+                document.getElementById('themeIconMobile').className = 'fa-solid fa-sun text-amber-400';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                document.getElementById('themeIconDesktop').className = 'fa-solid fa-moon text-slate-600';
+                document.getElementById('themeIconMobile').className = 'fa-solid fa-moon text-slate-600';
+            }
+        };
+
+        window.toggleTheme = function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) {
+                localStorage.setItem('portal_theme', 'light');
+            } else {
+                localStorage.setItem('portal_theme', 'dark');
+            }
+            window.initTheme();
+        };
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`app-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            const mobileTitle = document.getElementById('mobileAppTitle');
+            if (mobileTitle) mobileTitle.innerText = tabTitles[tabId] || 'Портал';
+        };
+
+        window.showToast = function(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+            } else if (type === 'info') {
+                toastIcon.className = "fa-solid fa-circle-info text-cyan-400 text-lg";
+            } else {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-lg";
+            }
+
+            toast.classList.remove('translate-y-[-150%]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-150%]', 'opacity-0');
+            }, 2500);
+        };
+
+        // --- MODULE 1: BMI CALCULATOR ---
+        function syncBmiInputs(e) {
+            const bmiHeight = document.getElementById('bmiHeight');
+            const bmiWeight = document.getElementById('bmiWeight');
+            const bmiHeightNum = document.getElementById('bmiHeightNum');
+            const bmiWeightNum = document.getElementById('bmiWeightNum');
+
+            if (e.target.id === 'bmiHeight') bmiHeightNum.value = bmiHeight.value;
+            if (e.target.id === 'bmiHeightNum') bmiHeight.value = bmiHeightNum.value;
+            if (e.target.id === 'bmiWeight') bmiWeightNum.value = bmiWeight.value;
+            if (e.target.id === 'bmiWeightNum') bmiWeight.value = bmiWeightNum.value;
+            calculateBmi();
+        }
+
+        window.calculateBmi = function() {
+            const bmiHeight = document.getElementById('bmiHeight');
+            const bmiWeight = document.getElementById('bmiWeight');
+            if (!bmiHeight || !bmiWeight) return;
+
+            const h = parseFloat(bmiHeight.value) / 100;
+            const w = parseFloat(bmiWeight.value);
+            if (!h || !w) return;
+
+            const bmi = (w / (h * h)).toFixed(1);
+            document.getElementById('bmiValue').innerText = bmi;
+
+            const catEl = document.getElementById('bmiCategory');
+            let catText = 'Нормальный вес';
+            let catClass = 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+
+            if (bmi < 18.5) {
+                catText = 'Дефицит массы тела';
+                catClass = 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/30';
+            } else if (bmi >= 25 && bmi < 29.9) {
+                catText = 'Избыточная масса';
+                catClass = 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30';
+            } else if (bmi >= 30) {
+                catText = 'Ожирение';
+                catClass = 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30';
+            }
+
+            catEl.innerText = catText;
+            catEl.className = `inline-block px-4 py-1.5 rounded-full text-xs font-bold border ${catClass}`;
+
+            const minIdeal = (18.5 * h * h).toFixed(1);
+            const maxIdeal = (24.9 * h * h).toFixed(1);
+            document.getElementById('bmiIdealWeight').innerText = `${minIdeal} кг - ${maxIdeal} кг`;
+        };
+
+        window.saveBmiRecord = function() {
+            const bmi = document.getElementById('bmiValue').innerText;
+            const cat = document.getElementById('bmiCategory').innerText;
+            const history = JSON.parse(localStorage.getItem('bmi_history') || '[]');
+
+            history.unshift({
+                date: new Date().toLocaleDateString('ru-RU'),
+                bmi,
+                cat
+            });
+
+            localStorage.setItem('bmi_history', JSON.stringify(history.slice(0, 5)));
+            renderBmiHistory();
+            showToast('Запись добавлена в историю');
+        };
+
+        window.renderBmiHistory = function() {
+            const history = JSON.parse(localStorage.getItem('bmi_history') || '[]');
+            const container = document.getElementById('bmiHistoryList');
+            if (!container) return;
+            if (history.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-500 italic text-center py-2">История пуста</p>';
+                return;
+            }
+            container.innerHTML = history.map(item => `
+                <div class="flex justify-between items-center p-2 rounded-lg glass-card text-xs">
+                    <span class="text-slate-500 dark:text-slate-400">${item.date}</span>
+                    <span class="font-bold text-slate-800 dark:text-white">ИМТ: ${item.bmi}</span>
+                    <span class="text-slate-600 dark:text-slate-300">${item.cat}</span>
+                </div>
+            `).join('');
+        };
+
+        window.clearBmiHistory = function() {
+            localStorage.removeItem('bmi_history');
+            renderBmiHistory();
+            showToast('История очищена', 'info');
+        };
+
+        // --- MODULE 2: PASSWORD GENERATOR ---
+        window.generatePassword = function() {
+            const passLength = document.getElementById('passLength');
+            if (!passLength) return;
+            const length = parseInt(passLength.value);
+            const useUpper = document.getElementById('passUppercase').checked;
+            const useLower = document.getElementById('passLowercase').checked;
+            const useNum = document.getElementById('passNumbers').checked;
+            const useSym = document.getElementById('passSymbols').checked;
+
+            const uChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lChars = 'abcdefghijklmnopqrstuvwxyz';
+            const nChars = '0123456789';
+            const sChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+            let pool = '';
+            if (useUpper) pool += uChars;
+            if (useLower) pool += lChars;
+            if (useNum) pool += nChars;
+            if (useSym) pool += sChars;
+
+            if (!pool) {
+                document.getElementById('passOutput').value = 'Выберите символы';
+                return;
+            }
+
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += pool.charAt(Math.floor(Math.random() * pool.length));
+            }
+
+            document.getElementById('passOutput').value = result;
+            evaluatePasswordStrength(result);
+        };
+
+        function evaluatePasswordStrength(pass) {
+            let score = 0;
+            if (pass.length >= 8) score++;
+            if (pass.length >= 12) score++;
+            if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score++;
+            if (/[0-9]/.test(pass)) score++;
+            if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+            const bar = document.getElementById('passStrengthBar');
+            const text = document.getElementById('passStrengthText');
+
+            if (score <= 2) {
+                bar.style.width = '30%';
+                bar.className = 'h-full bg-rose-500 transition-all duration-300';
+                text.innerText = 'Слабый';
+                text.className = 'text-rose-500 font-bold';
+            } else if (score <= 4) {
+                bar.style.width = '65%';
+                bar.className = 'h-full bg-amber-400 transition-all duration-300';
+                text.innerText = 'Средний';
+                text.className = 'text-amber-500 font-bold';
+            } else {
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-emerald-400 transition-all duration-300';
+                text.innerText = 'Очень надежный';
+                text.className = 'text-emerald-500 font-bold';
+            }
+        }
+
+        window.copyPassword = function() {
+            const pass = document.getElementById('passOutput').value;
+            if (!pass || pass === 'Выберите символы') return;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = pass;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast('Пароль скопирован в буфер!');
+        };
+
+        // --- MODULE 3: UNIT CONVERTER ---
+        const unitData = {
+            time: {
+                units: {
+                    ms: 'Миллисекунды (ms)',
+                    s: 'Секунды (s)',
+                    min: 'Минуты (min)',
+                    h: 'Часы (h)',
+                    d: 'Дни (d)',
+                    wk: 'Недели (wk)',
+                    mo: 'Месяцы (avg 30.4375 d)',
+                    yr: 'Годы (yr - 365 d)'
+                },
+                rates: {
+                    ms: 0.001,
+                    s: 1,
+                    min: 60,
+                    h: 3600,
+                    d: 86400,
+                    wk: 604800,
+                    mo: 2629800,
+                    yr: 31536000
+                }
+            },
+            length: {
+                units: { m: 'Метры (m)', km: 'Километры (km)', cm: 'Сантиметры (cm)', mm: 'Миллиметры (mm)', ft: 'Футы (ft)', in: 'Дюймы (in)', mi: 'Мили (mi)' },
+                rates: { m: 1, km: 1000, cm: 0.01, mm: 0.001, ft: 0.3048, in: 0.0254, mi: 1609.344 }
+            },
+            mass: {
+                units: { kg: 'Килограммы (kg)', g: 'Граммы (g)', mg: 'Миллиграммы (mg)', t: 'Тонны (t)', lbs: 'Фунты (lbs)', oz: 'Унции (oz)' },
+                rates: { kg: 1, g: 0.001, mg: 0.000001, t: 1000, lbs: 0.45359237, oz: 0.028349523125 }
+            },
+            temp: {
+                units: { c: 'Цельсий (°C)', f: 'Фаренгейт (°F)', k: 'Кельвин (K)' }
+            },
+            volume: {
+                units: { l: 'Литры (l)', ml: 'Миллилитры (ml)', m3: 'Куб. метры (m³)', gal: 'Галлоны US (gal)', fl_oz: 'Жидкие унции (fl oz)' },
+                rates: { l: 1, ml: 0.001, m3: 1000, gal: 3.78541, fl_oz: 0.0295735 }
+            },
+            area: {
+                units: { m2: 'Кв. метры (m²)', km2: 'Кв. километры (km²)', cm2: 'Кв. сантиметры (cm²)', ha: 'Гектары (ha)', ac: 'Акры (ac)' },
+                rates: { m2: 1, km2: 1000000, cm2: 0.0001, ha: 10000, ac: 4046.8564224 }
+            },
+            speed: {
+                units: { m_s: 'Метры в секунду (m/s)', km_h: 'Км в час (km/h)', mph: 'Мили в час (mph)', knot: 'Узлы (kn)' },
+                rates: { m_s: 1, km_h: 0.277777778, mph: 0.44704, knot: 0.514444444 }
+            },
+            data: {
+                units: { b: 'Байты (B)', kb: 'Килобайты (KB)', mb: 'Мегабайты (MB)', gb: 'Гигабайты (GB)', tb: 'Терабайты (TB)' },
+                rates: { b: 1, kb: 1024, mb: 1048576, gb: 1073741824, tb: 1099511627776 }
+            }
+        };
+
+        let currentCategory = 'time';
+
+        window.setConverterCategory = function(cat) {
+            currentCategory = cat;
+            const categories = ['time', 'length', 'mass', 'temp', 'volume', 'area', 'speed', 'data'];
+            categories.forEach(c => {
+                const btn = document.getElementById(`catBtn-${c}`);
+                if (btn) {
+                    if (c === cat) {
+                        btn.className = 'flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-white bg-emerald-500/80 dark:bg-emerald-500/20 border border-emerald-500/30 whitespace-nowrap';
+                    } else {
+                        btn.className = 'flex-1 min-w-[90px] py-2 text-xs md:text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap';
+                    }
+                }
+            });
+
+            populateUnitDropdowns();
+            convertUnits();
+        };
+
+        window.populateUnitDropdowns = function() {
+            const fromSelect = document.getElementById('convFromUnit');
+            const toSelect = document.getElementById('convToUnit');
+            if (!fromSelect || !toSelect) return;
+            const units = unitData[currentCategory].units;
+
+            const keys = Object.keys(units);
+            fromSelect.innerHTML = keys.map(k => `<option value="${k}">${units[k]}</option>`).join('');
+            toSelect.innerHTML = keys.map(k => `<option value="${k}">${units[k]}</option>`).join('');
+
+            if (keys.length > 1) toSelect.value = keys[1];
+        };
+
+        window.convertUnits = function() {
+            const val = parseFloat(document.getElementById('convInput').value) || 0;
+            const from = document.getElementById('convFromUnit').value;
+            const to = document.getElementById('convToUnit').value;
+            const resEl = document.getElementById('convResult');
+
+            if (currentCategory === 'temp') {
+                let celsius = 0;
+                if (from === 'c') celsius = val;
+                else if (from === 'f') celsius = (val - 32) * 5 / 9;
+                else if (from === 'k') celsius = val - 273.15;
+
+                let out = 0;
+                if (to === 'c') out = celsius;
+                else if (to === 'f') out = (celsius * 9 / 5) + 32;
+                else if (to === 'k') out = celsius + 273.15;
+
+                resEl.value = out.toFixed(4);
+            } else {
+                const rates = unitData[currentCategory].rates;
+                const baseValue = val * rates[from];
+                const out = baseValue / rates[to];
+                resEl.value = Number(out.toFixed(8)).toString();
+            }
+        };
+
+        window.swapUnits = function() {
+            const from = document.getElementById('convFromUnit');
+            const to = document.getElementById('convToUnit');
+            const temp = from.value;
+            from.value = to.value;
+            to.value = temp;
+            convertUnits();
+        };
+
+        window.copyConvResult = function() {
+            const res = document.getElementById('convResult').value;
+            if (!res) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = res;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('Результат скопирован!');
+        };
+
+        // --- MODULE 4: NOTES APP ---
+        function getNotes() {
+            return JSON.parse(localStorage.getItem('portal_notes') || '[]');
+        }
+
+        window.renderNotes = function() {
+            const notes = getNotes();
+            const searchInput = document.getElementById('noteSearch');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
+            const grid = document.getElementById('notesGrid');
+            if (!grid) return;
+
+            const filtered = notes.filter(n => n.title.toLowerCase().includes(search) || n.content.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500 text-sm">Заметок не найдено</div>';
+                return;
+            }
+
+            const colorBadgeMap = {
+                purple: 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border-purple-500/30',
+                cyan: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-500/30',
+                emerald: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30',
+                amber: 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30',
+            };
+
+            grid.innerHTML = filtered.map(n => `
+                <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-500 transition">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-start gap-2">
+                            <h3 class="font-bold text-slate-800 dark:text-white text-base line-clamp-1">${escapeHtml(n.title)}</h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${colorBadgeMap[n.color]} uppercase">
+                                ${n.color}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap line-clamp-4">${escapeHtml(n.content)}</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                        <span>${n.date}</span>
+                        <div class="flex gap-2">
+                            <button onclick="editNote('${n.id}')" class="hover:text-purple-500"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.openNoteModal = function() {
+            document.getElementById('noteEditId').value = '';
+            document.getElementById('noteTitleInput').value = '';
+            document.getElementById('noteContentInput').value = '';
+            document.getElementById('noteModalTitle').innerText = 'Новая заметка';
+            document.getElementById('noteModal').classList.remove('hidden');
+        };
+
+        window.closeNoteModal = function() {
+            document.getElementById('noteModal').classList.add('hidden');
+        };
+
+        window.saveNote = function() {
+            const id = document.getElementById('noteEditId').value;
+            const title = document.getElementById('noteTitleInput').value.trim();
+            const content = document.getElementById('noteContentInput').value.trim();
+            const color = document.getElementById('noteCategorySelect').value;
+
+            if (!title) {
+                showToast('Введите заголовок заметки', 'error');
+                return;
+            }
+
+            let notes = getNotes();
+            if (id) {
+                notes = notes.map(n => n.id === id ? { ...n, title, content, color } : n);
+                showToast('Заметка обновлена');
+            } else {
+                notes.unshift({
+                    id: Date.now().toString(),
+                    title,
+                    content,
+                    color,
+                    date: new Date().toLocaleDateString('ru-RU')
+                });
+                showToast('Заметка создана');
+            }
+
+            localStorage.setItem('portal_notes', JSON.stringify(notes));
+            closeNoteModal();
+            renderNotes();
+        };
+
+        window.editNote = function(id) {
+            const note = getNotes().find(n => n.id === id);
+            if (!note) return;
+            document.getElementById('noteEditId').value = note.id;
+            document.getElementById('noteTitleInput').value = note.title;
+            document.getElementById('noteContentInput').value = note.content;
+            document.getElementById('noteCategorySelect').value = note.color;
+            document.getElementById('noteModalTitle').innerText = 'Редактировать заметку';
+            document.getElementById('noteModal').classList.remove('hidden');
+        };
+
+        window.deleteNote = function(id) {
+            const notes = getNotes().filter(n => n.id !== id);
+            localStorage.setItem('portal_notes', JSON.stringify(notes));
+            renderNotes();
+            showToast('Заметка удалена', 'info');
+        };
+
+        // --- MODULE 5: HABIT TRACKER ---
+        function getHabits() {
+            return JSON.parse(localStorage.getItem('portal_habits') || '[]');
+        }
+
+        window.renderHabits = function() {
+            const habits = getHabits();
+            const container = document.getElementById('habitsList');
+            if (!container) return;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (habits.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 glass-panel rounded-2xl text-slate-500 text-sm">Привычек пока нет. Добавьте первую!</div>';
+                updateHabitStats(0, 0);
+                return;
+            }
+
+            let completedToday = 0;
+
+            container.innerHTML = habits.map(h => {
+                const isDoneToday = h.history && h.history.includes(today);
+                if (isDoneToday) completedToday++;
+
+                return `
+                    <div class="glass-panel p-4 rounded-2xl flex items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3.5">
+                            <button onclick="toggleHabit('${h.id}')" class="w-7 h-7 rounded-lg flex items-center justify-center transition ${isDoneToday ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'glass-card border border-slate-300 dark:border-slate-700 text-transparent hover:text-slate-400'}">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </button>
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800 dark:text-white ${isDoneToday ? 'line-through text-slate-400 dark:text-slate-500' : ''}">${escapeHtml(h.title)}</h4>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400">Серия: <strong class="text-rose-500 font-bold">${h.streak || 0} дн.</strong></span>
+                            </div>
+                        </div>
+                        <button onclick="deleteHabit('${h.id}')" class="text-xs text-slate-400 hover:text-rose-500 p-2"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            }).join('');
+
+            updateHabitStats(completedToday, habits.length);
+        };
+
+        function updateHabitStats(done, total) {
+            document.getElementById('habitProgressSubtitle').innerText = `Выполнено ${done} из ${total} привычек`;
+            const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+            document.getElementById('habitProgressPercent').innerText = `${pct}%`;
+            document.getElementById('habitProgressBar').style.width = `${pct}%`;
+        }
+
+        window.openHabitModal = function() {
+            document.getElementById('habitTitleInput').value = '';
+            document.getElementById('habitModal').classList.remove('hidden');
+        };
+
+        window.closeHabitModal = function() {
+            document.getElementById('habitModal').classList.add('hidden');
+        };
+
+        window.saveHabit = function() {
+            const title = document.getElementById('habitTitleInput').value.trim();
+            if (!title) {
+                showToast('Введите название привычки', 'error');
+                return;
+            }
+
+            const habits = getHabits();
+            habits.push({
+                id: Date.now().toString(),
+                title,
+                streak: 0,
+                history: []
+            });
+
+            localStorage.setItem('portal_habits', JSON.stringify(habits));
+            closeHabitModal();
+            renderHabits();
+            showToast('Привычка создана');
+        };
+
+        window.toggleHabit = function(id) {
+            const today = new Date().toISOString().split('T')[0];
+            let habits = getHabits();
+
+            habits = habits.map(h => {
+                if (h.id === id) {
+                    h.history = h.history || [];
+                    const index = h.history.indexOf(today);
+                    if (index > -1) {
+                        h.history.splice(index, 1);
+                        h.streak = Math.max(0, h.streak - 1);
+                    } else {
+                        h.history.push(today);
+                        h.streak = (h.streak || 0) + 1;
+                    }
+                }
+                return h;
+            });
+
+            localStorage.setItem('portal_habits', JSON.stringify(habits));
+            renderHabits();
+        };
+
+        window.deleteHabit = function(id) {
+            const habits = getHabits().filter(h => h.id !== id);
+            localStorage.setItem('portal_habits', JSON.stringify(habits));
+            renderHabits();
+            showToast('Привычка удалена', 'info');
+        };
+
+        // --- MODULE 6: ADVANCED INTERVAL TIMER ---
+        let timerConfig = {
+            work: 30,
+            rest: 10,
+            prep: 5,
+            rounds: 8,
+            longRest: 30,
+            longRestInterval: 4
+        };
+
+        let timerState = {
+            isRunning: false,
+            currentRound: 1,
+            phase: 'prep',
+            timeRemaining: 5,
+            phaseTotalDuration: 5
+        };
+
+        let timerInterval = null;
+
+        function initTimerConfig() {
+            const saved = localStorage.getItem('portal_timer_config');
+            if (saved) {
+                try {
+                    timerConfig = { ...timerConfig, ...JSON.parse(saved) };
+                } catch(e) {}
+            }
+            updateTimerInputsDisplay();
+            resetTimer();
+        }
+
+        function saveTimerConfig() {
+            localStorage.setItem('portal_timer_config', JSON.stringify(timerConfig));
+        }
+
+        function updateTimerInputsDisplay() {
+            ['work', 'rest', 'prep', 'rounds', 'longRest', 'longRestInterval'].forEach(key => {
+                const inp = document.getElementById(`inp-${key}`);
+                const val = document.getElementById(`val-${key}`);
+                if (inp) inp.value = timerConfig[key];
+                if (val) val.innerText = key === 'rounds' || key === 'longRestInterval' ? timerConfig[key] : `${timerConfig[key]}s`;
+            });
+
+            const liveWorkVal = document.getElementById('liveWorkVal');
+            const liveRestVal = document.getElementById('liveRestVal');
+            const liveLongRestVal = document.getElementById('liveLongRestVal');
+            if (liveWorkVal) liveWorkVal.innerText = `${timerConfig.work}s`;
+            if (liveRestVal) liveRestVal.innerText = `${timerConfig.rest}s`;
+            if (liveLongRestVal) liveLongRestVal.innerText = `${timerConfig.longRest}s`;
+        }
+
+        window.adjSetting = function(key, delta) {
+            pauseTimer();
+            if (key === 'work') timerConfig.work = Math.max(5, Math.min(300, timerConfig.work + delta));
+            if (key === 'rest') timerConfig.rest = Math.max(0, Math.min(180, timerConfig.rest + delta));
+            if (key === 'prep') timerConfig.prep = Math.max(0, Math.min(60, timerConfig.prep + delta));
+            if (key === 'rounds') timerConfig.rounds = Math.max(1, Math.min(30, timerConfig.rounds + delta));
+            if (key === 'longRest') timerConfig.longRest = Math.max(0, Math.min(300, timerConfig.longRest + delta));
+            if (key === 'longRestInterval') timerConfig.longRestInterval = Math.max(2, Math.min(10, timerConfig.longRestInterval + delta));
+
+            saveTimerConfig();
+            updateTimerInputsDisplay();
+            resetTimer();
+        };
+
+        window.applyTimerPreset = function(work, rest, rounds, prep = 5, longRest = 30, longRestInterval = 4) {
+            pauseTimer();
+            timerConfig = { work, rest, rounds, prep, longRest, longRestInterval };
+            saveTimerConfig();
+            updateTimerInputsDisplay();
+            resetTimer();
+            showToast('Пресет применен');
+        };
+
+        window.resetTimerSettings = function() {
+            applyTimerPreset(30, 10, 8, 5, 30, 4);
+        };
+
+        function playBeepSound(type = 'normal') {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = type === 'high' ? 1000 : 600;
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + (type === 'high' ? 0.6 : 0.25));
+            } catch (e) {}
+        }
+
+        window.resetTimer = function() {
+            pauseTimer();
+            timerState.currentRound = 1;
+            timerState.phase = timerConfig.prep > 0 ? 'prep' : 'work';
+            timerState.timeRemaining = timerConfig.prep > 0 ? timerConfig.prep : timerConfig.work;
+            timerState.phaseTotalDuration = timerState.timeRemaining;
+            renderTimerUI();
+        };
+
+        window.toggleTimer = function() {
+            if (timerState.isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        };
+
+        function startTimer() {
+            if (timerState.phase === 'finished') {
+                resetTimer();
+            }
+            timerState.isRunning = true;
+            document.getElementById('timerToggleBtn').innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i> Пауза';
+
+            timerInterval = setInterval(() => {
+                if (timerState.timeRemaining > 0) {
+                    timerState.timeRemaining--;
+                    if (timerState.timeRemaining <= 3 && timerState.timeRemaining > 0) {
+                        playBeepSound('normal');
+                    }
+                    renderTimerUI();
+                } else {
+                    advanceTimerPhase();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            timerState.isRunning = false;
+            clearInterval(timerInterval);
+            const btn = document.getElementById('timerToggleBtn');
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i> Старт';
+        }
+
+        function advanceTimerPhase() {
+            playBeepSound('high');
+
+            if (timerState.phase === 'prep') {
+                timerState.phase = 'work';
+                timerState.timeRemaining = timerConfig.work;
+                timerState.phaseTotalDuration = timerConfig.work;
+            } else if (timerState.phase === 'work') {
+                const isLastRound = timerState.currentRound >= timerConfig.rounds;
+                const isLongRestTurn = (timerState.currentRound % timerConfig.longRestInterval === 0);
+
+                if (!isLastRound) {
+                    if (isLongRestTurn && timerConfig.longRest > 0) {
+                        timerState.phase = 'longRest';
+                        timerState.timeRemaining = timerConfig.longRest;
+                        timerState.phaseTotalDuration = timerConfig.longRest;
+                    } else if (timerConfig.rest > 0) {
+                        timerState.phase = 'rest';
+                        timerState.timeRemaining = timerConfig.rest;
+                        timerState.phaseTotalDuration = timerConfig.rest;
+                    } else {
+                        timerState.currentRound++;
+                        timerState.phase = 'work';
+                        timerState.timeRemaining = timerConfig.work;
+                        timerState.phaseTotalDuration = timerConfig.work;
+                    }
+                } else {
+                    timerState.phase = 'finished';
+                    pauseTimer();
+                    showToast('Тренировка полностью завершена!', 'success');
+                }
+            } else if (timerState.phase === 'rest' || timerState.phase === 'longRest') {
+                timerState.currentRound++;
+                timerState.phase = 'work';
+                timerState.timeRemaining = timerConfig.work;
+                timerState.phaseTotalDuration = timerConfig.work;
+            }
+
+            renderTimerUI();
+        }
+
+        function renderTimerUI() {
+            const display = document.getElementById('timerDisplay');
+            if (!display) return;
+
+            const m = Math.floor(timerState.timeRemaining / 60).toString().padStart(2, '0');
+            const s = (timerState.timeRemaining % 60).toString().padStart(2, '0');
+            display.innerText = `${m}:${s}`;
+
+            document.getElementById('timerCurrentRound').innerText = `Подход: ${timerState.currentRound} / ${timerConfig.rounds}`;
+
+            const badge = document.getElementById('timerPhaseBadge');
+            if (timerState.phase === 'prep') {
+                badge.innerText = 'ПОДГОТОВКА';
+                badge.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30';
+            } else if (timerState.phase === 'work') {
+                badge.innerText = 'РАБОТА';
+                badge.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30 animate-pulse';
+            } else if (timerState.phase === 'rest') {
+                badge.innerText = 'ОТДЫХ';
+                badge.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30';
+            } else if (timerState.phase === 'longRest') {
+                badge.innerText = 'ДЛИННЫЙ ОТДЫХ';
+                badge.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-cyan-500/20 text-cyan-500 dark:text-cyan-300 border border-cyan-500/30';
+            } else {
+                badge.innerText = 'ЗАВЕРШЕНО';
+                badge.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 border border-indigo-500/30';
+            }
+
+            let remainingTotalSec = timerState.timeRemaining;
+            const roundsLeft = timerConfig.rounds - timerState.currentRound;
+            remainingTotalSec += roundsLeft * (timerConfig.work + timerConfig.rest);
+
+            const remM = Math.floor(remainingTotalSec / 60).toString().padStart(2, '0');
+            const remS = (remainingTotalSec % 60).toString().padStart(2, '0');
+            document.getElementById('timerTotalRemaining').innerText = `Осталось: ~${remM}:${remS}`;
+
+            const bar = document.getElementById('timerStepProgressBar');
+            const pct = timerState.phaseTotalDuration > 0 ? (timerState.timeRemaining / timerState.phaseTotalDuration) * 100 : 0;
+            bar.style.width = `${pct}%`;
+        }
+
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            calculateBmi();
+            renderBmiHistory();
+            generatePassword();
+            populateUnitDropdowns();
+            convertUnits();
+            renderNotes();
+            renderHabits();
+            initTimerConfig();
+
+            const bmiInputs = ['bmiHeight', 'bmiWeight', 'bmiHeightNum', 'bmiWeightNum'];
+            bmiInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', syncBmiInputs);
+            });
+
+            const convInput = document.getElementById('convInput');
+            const convFromUnit = document.getElementById('convFromUnit');
+            const convToUnit = document.getElementById('convToUnit');
+            if (convInput) convInput.addEventListener('input', convertUnits);
+            if (convFromUnit) convFromUnit.addEventListener('change', convertUnits);
+            if (convToUnit) convToUnit.addEventListener('change', convertUnits);
+
+            const passLength = document.getElementById('passLength');
+            if (passLength) {
+                passLength.addEventListener('input', () => {
+                    document.getElementById('passLengthVal').innerText = passLength.value;
+                    generatePassword();
+                });
+            }
+
+            const noteSearch = document.getElementById('noteSearch');
+            if (noteSearch) noteSearch.addEventListener('input', renderNotes);
+
+            ['work', 'rest', 'prep', 'rounds', 'longRest', 'longRestInterval'].forEach(key => {
+                const inp = document.getElementById(`inp-${key}`);
+                if (inp) {
+                    inp.addEventListener('input', (e) => {
+                        pauseTimer();
+                        timerConfig[key] = parseInt(e.target.value) || 0;
+                        saveTimerConfig();
+                        updateTimerInputsDisplay();
+                        resetTimer();
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

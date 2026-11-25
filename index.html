@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ITMouse // ORBITAL ARCHIVE v2.6 — Interactive Deck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Unbounded"', 'sans-serif'],
+            sans: ['"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            void: '#07080A',
+            obsidian: '#0E1015',
+            surface: '#151821',
+            borderline: '#262B38',
+            acid: '#CCFF00',
+            cyber: '#00F0FF',
+            signal: '#FF3B30',
+            amber: '#FFB800',
+          },
+          animation: {
+            'marquee': 'marquee 28s linear infinite',
+            'spin-slow': 'spin 18s linear infinite',
+            'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            marquee: {
+              '0%': { transform: 'translateX(0%)' },
+              '100%': { transform: 'translateX(-50%)' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg-grid: rgba(204, 255, 0, 0.045);
+      --cursor-x: 50vw;
+      --cursor-y: 50vh;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: #07080A;
+      color: #F3F4F6;
+    }
+
+    body {
+      background-color: #07080A;
+      background-image:
+        linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px),
+        radial-gradient(circle 600px at var(--cursor-x) var(--cursor-y), rgba(0, 240, 255, 0.06), transparent 80%);
+      background-size: 44px 44px, 44px 44px, 100% 100%;
+      overflow-x: hidden;
+    }
+
+    /* Subtle CRT scanlines */
+    .scanlines::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 90;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.22) 50%
+      );
+      background-size: 100% 4px;
+      opacity: 0.35;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #07080A;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #262B38;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #CCFF00;
+    }
+
+    /* Custom Cursor on Desktop */
+    @media (pointer: fine) {
+      body.custom-cursor-active,
+      body.custom-cursor-active a,
+      body.custom-cursor-active button,
+      body.custom-cursor-active input,
+      body.custom-cursor-active select {
+        cursor: none !important;
+      }
+    }
+
+    #custom-cursor-dot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background: #CCFF00;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: background-color 0.15s ease, transform 0.08s ease;
+    }
+
+    #custom-cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid rgba(204, 255, 0, 0.65);
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%) rotate(0deg);
+      transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                  height 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 0.2s ease,
+                  border-radius 0.2s ease,
+                  background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #custom-cursor-ring.hover-target {
+      width: 56px;
+      height: 56px;
+      border-color: #00F0FF;
+      background-color: rgba(0, 240, 255, 0.08);
+      border-radius: 16px;
+    }
+
+    /* Tactile Neo-Brutalist Card */
+    .cyber-card {
+      position: relative;
+      background: linear-gradient(165deg, rgba(21, 24, 33, 0.94) 0%, rgba(12, 14, 19, 0.98) 100%);
+      border: 1px solid #262B38;
+      box-shadow: 4px 4px 0px #151821;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 0.25s ease,
+                  box-shadow 0.25s ease;
+      transform-style: preserve-3d;
+    }
+
+    .cyber-card:hover {
+      border-color: #CCFF00;
+      box-shadow: 6px 6px 0px rgba(204, 255, 0, 0.85);
+    }
+
+    .cyber-card-cyan:hover {
+      border-color: #00F0FF;
+      box-shadow: 6px 6px 0px rgba(0, 240, 255, 0.85);
+    }
+
+    /* Range input styling for Video Player */
+    input[type="range"].cyber-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    input[type="range"].cyber-slider::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #262B38;
+    }
+    input[type="range"].cyber-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 4px;
+      background: #CCFF00;
+      border: 2px solid #07080A;
+      margin-top: -4px;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].cyber-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    /* Corner bracket utility */
+    .bracket-box {
+      position: relative;
+    }
+    .bracket-box::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid rgba(204, 255, 0, 0.5);
+      border-bottom: 2px solid rgba(204, 255, 0, 0.5);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="scanlines font-sans antialiased selection:bg-acid selection:text-void">
+
+  <!-- Custom Cursor Elements (Desktop) -->
+  <div id="custom-cursor-dot" class="hidden md:block"></div>
+  <div id="custom-cursor-ring" class="hidden md:flex">
+    <span id="cursor-label" class="font-mono text-[8px] font-bold tracking-widest text-cyber uppercase opacity-0 transition-opacity"></span>
+  </div>
+
+  <!-- Top Telemetry Ticker -->
+  <div class="w-full bg-acid text-void border-b border-void overflow-hidden py-1.5 select-none relative z-40">
+    <div class="flex whitespace-nowrap animate-marquee font-mono text-xs font-bold tracking-wider uppercase">
+      <span class="mx-6">★ ITMOUSE // ORBITAL ARCHIVE OS v2.6</span>
+      <span class="mx-6">● LOCAL DIRECTORY READY: 09 ARTIFACTS MOUNTED</span>
+      <span class="mx-6">▲ WEBGL / THREE.JS / PYTHON / WEB AUDIO / UI ENGINEERING</span>
+      <span class="mx-6">◆ CLICK ANY ARTIFACT TO LAUNCH OR INSPECT LIVE</span>
+      <span class="mx-6">★ ITMOUSE // ORBITAL ARCHIVE OS v2.6</span>
+      <span class="mx-6">● LOCAL DIRECTORY READY: 09 ARTIFACTS MOUNTED</span>
+      <span class="mx-6">▲ WEBGL / THREE.JS / PYTHON / WEB AUDIO / UI ENGINEERING</span>
+      <span class="mx-6">◆ CLICK ANY ARTIFACT TO LAUNCH OR INSPECT LIVE</span>
+    </div>
+  </div>
+
+  <!-- Sticky Tactical Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-void/85 border-b border-borderline">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- Brand Identity -->
+      <a href="#top" class="interactive flex items-center gap-3 group" data-cursor="HOME">
+        <div class="w-10 h-10 rounded-xl bg-obsidian border border-acid/60 flex items-center justify-center shadow-[2px_2px_0px_#CCFF00] group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-transform">
+          <svg class="w-5 h-5 text-acid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="6" y="3" width="12" height="18" rx="6" />
+            <line x1="12" y1="7" x2="12" y2="11" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <div class="font-display font-black text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
+            ITMouse
+            <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-acid/15 text-acid border border-acid/40">SYS.26</span>
+          </div>
+          <p class="font-mono text-[10px] text-gray-400 hidden sm:block">CREATIVE DEVELOPER &amp; DIGITAL ARCHITECT</p>
+        </div>
+      </a>
+
+      <!-- Navigation Pills -->
+      <nav class="hidden lg:flex items-center gap-1 bg-obsidian/90 p-1 rounded-2xl border border-borderline font-mono text-xs">
+        <a href="#cinema-deck" class="interactive px-3.5 py-1.5 rounded-xl text-gray-300 hover:text-void hover:bg-acid transition-colors" data-cursor="PLAY">[01] SHOWREEL</a>
+        <a href="#archive-grid" class="interactive px-3.5 py-1.5 rounded-xl text-gray-300 hover:text-void hover:bg-acid transition-colors" data-cursor="INDEX">[02] ПРОЕКТЫ (08)</a>
+        <a href="#terminal-spec" class="interactive px-3.5 py-1.5 rounded-xl text-gray-300 hover:text-void hover:bg-acid transition-colors" data-cursor="INFO">[03] СТЕК &amp; ФАЙЛЫ</a>
+      </nav>
+
+      <!-- Tactical Controls (Sound + Clock + Cursor Toggle) -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-obsidian border border-borderline font-mono text-xs text-gray-300">
+          <span class="w-2 h-2 rounded-full bg-acid animate-pulse-fast"></span>
+          <span id="live-clock">00:00:00</span>
+        </div>
+
+        <button id="sound-toggle" type="button" class="interactive px-3 py-2 rounded-xl bg-obsidian border border-borderline hover:border-acid text-xs font-mono font-bold flex items-center gap-2 transition-all" data-cursor="AUDIO" title="Включить/выключить тактильные звуки интерфейса">
+          <span id="sound-icon" class="text-acid">🔊</span>
+          <span id="sound-label" class="hidden md:inline text-gray-200">SFX: ON</span>
+        </button>
+
+        <button id="cursor-toggle" type="button" class="interactive hidden md:flex px-3 py-2 rounded-xl bg-obsidian border border-borderline hover:border-cyber text-xs font-mono text-gray-300 transition-all" data-cursor="AIM" title="Переключить кастомный прицел">
+          <span>⌖</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 space-y-16">
+
+    <!-- HERO BENTO COMMAND DECK -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      <!-- Main Hero Poster Card -->
+      <div class="lg:col-span-8 cyber-card rounded-3xl p-6 sm:p-10 flex flex-col justify-between bracket-box overflow-hidden">
+        <!-- Decorative Top Metadata -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderline pb-4 mb-6 font-mono text-xs text-gray-400">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md bg-cyber/15 text-cyber border border-cyber/30 font-bold">NODE // LOCAL_WORKSPACE</span>
+            <span>DIR: ./PORTFOLIO_ROOT/</span>
+          </div>
+          <span class="text-acid">STATUS: ALL SYSTEMS NOMINAL</span>
+        </div>
+
+        <div class="space-y-5 relative z-10">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface border border-borderline font-mono text-xs text-gray-300">
+            <span class="text-acid">✦</span> Интерактивный архив разработок ITMouse
+          </div>
+
+          <h1 class="font-display font-black text-3xl sm:text-5xl lg:text-6xl leading-[1.08] tracking-tight text-white">
+            КОД КАК <span class="text-transparent bg-clip-text bg-gradient-to-r from-acid via-white to-cyber">ТАКТИЛЬНЫЙ</span> МЕХАНИЗМ
+          </h1>
+
+          <p class="text-gray-300 text-base sm:text-lg max-w-2xl leading-relaxed">
+            Добро пожаловать в пространственный терминал проектов <strong class="text-white">ITMouse</strong>. Здесь собраны 3D-симуляторы на Three.js, математические RPG-игры, AI-конструкторы промптов, Telegram-боты на Python и генеративные утилиты. Запускайте любой модуль прямо в окне предпросмотра или открывайте в новой вкладке.
+          </p>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-borderline flex flex-wrap items-center gap-3">
+          <a href="#archive-grid" class="interactive px-6 py-3.5 rounded-2xl bg-acid text-void font-display font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-white transition-colors shadow-[3px_3px_0px_#00F0FF]" data-cursor="EXPLORE">
+            Открыть матрицу проектов ↓
+          </a>
+          <a href="#cinema-deck" class="interactive px-5 py-3.5 rounded-2xl bg-obsidian border border-borderline hover:border-cyber text-white font-mono text-xs sm:text-sm flex items-center gap-2 transition-colors" data-cursor="WATCH">
+            <span class="text-cyber">▶</span> Смотреть клип.mp4
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Telemetry & Quick Launch Mini-Modules -->
+      <div class="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
+        <!-- System Metrics Module -->
+        <div class="cyber-card cyber-card-cyan rounded-3xl p-6 flex flex-col justify-between">
+          <div class="flex items-center justify-between font-mono text-xs text-gray-400 mb-4">
+            <span>// TELEMETRY</span>
+            <span class="text-cyber">09 FILES</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 my-2">
+            <div class="bg-void/80 border border-borderline rounded-2xl p-3 text-center">
+              <div class="font-display font-black text-2xl text-acid">06</div>
+              <div class="font-mono text-[10px] text-gray-400 mt-1">WEB APPS</div>
+            </div>
+            <div class="bg-void/80 border border-borderline rounded-2xl p-3 text-center">
+              <div class="font-display font-black text-2xl text-cyber">02</div>
+              <div class="font-mono text-[10px] text-gray-400 mt-1">PY / BOT</div>
+            </div>
+            <div class="bg-void/80 border border-borderline rounded-2xl p-3 text-center">
+              <div class="font-display font-black text-2xl text-amber">02</div>
+              <div class="font-mono text-[10px] text-gray-400 mt-1">MEDIA / ART</div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-borderline font-mono text-[11px] text-gray-400 flex items-center justify-between">
+            <span>ENGINE: HTML5 / CANVAS / PY</span>
+            <span class="text-acid">100% LOCAL</span>
+          </div>
+        </div>
+
+        <!-- Random Artifact Launcher -->
+        <div class="cyber-card rounded-3xl p-6 flex flex-col justify-between bg-gradient-to-br from-surface to-obsidian">
+          <div>
+            <div class="flex items-center justify-between font-mono text-xs text-acid mb-2">
+              <span>// RANDOMIZER_MODULE</span>
+              <span>🎲</span>
+            </div>
+            <h2 class="font-display font-bold text-lg text-white">Случайный запуск</h2>
+            <p class="text-xs text-gray-400 mt-1">Не знаете, с чего начать? Запустите случайный интерактивный артефакт из коллекции.</p>
+          </div>
+
+          <button id="random-launch-btn" type="button" class="interactive mt-5 w-full py-3 px-4 rounded-2xl bg-surface hover:bg-acid hover:text-void border border-acid/50 text-acid font-mono font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2" data-cursor="ROLL">
+            <span>⚡ ЗАПУСТИТЬ СЛУЧАЙНЫЙ ПРОЕКТ</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEDICATED CINEMA DECK FOR клип.mp4 -->
+    <section id="cinema-deck" class="scroll-mt-24">
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-5">
+        <div>
+          <div class="font-mono text-xs text-cyber uppercase tracking-widest mb-1">// MEDIA_DECK_01 — LOCAL STREAM</div>
+          <h2 class="font-display font-black text-2xl sm:text-3xl text-white">ВИДЕО-ТЕРМИНАЛ: <span class="text-acid">клип.mp4</span></h2>
+        </div>
+        <div class="font-mono text-xs text-gray-400 bg-obsidian px-3 py-1.5 rounded-xl border border-borderline">
+          SOURCE: <span class="text-white">./клип.mp4</span>
+        </div>
+      </div>
+
+      <div class="cyber-card cyber-card-cyan rounded-3xl p-4 sm:p-6">
+        <!-- Video Viewport Container -->
+        <div id="video-wrapper" class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-borderline group select-none">
+          <!-- ONLY ONE VIDEO ELEMENT WITH EXACT SRC "клип.mp4" -->
+          <video
+            id="main-video"
+            src="клип.mp4"
+            class="w-full h-full object-contain bg-black"
+            playsinline
+            preload="metadata"
+          ></video>
+
+          <!-- Center Big Play Overlay -->
+          <button
+            id="video-center-play"
+            type="button"
+            aria-label="Воспроизвести видео"
+            class="interactive absolute inset-0 flex items-center justify-center bg-void/45 backdrop-blur-[2px] transition-opacity duration-300"
+            data-cursor="PLAY"
+          >
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-acid text-void flex items-center justify-center shadow-[0_0_40px_rgba(204,255,0,0.5)] hover:scale-105 transition-transform">
+              <svg class="w-10 h-10 ml-1" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            </div>
+          </button>
+
+          <!-- Fallback Screen if клип.mp4 is not found or fails to load -->
+          <div id="video-fallback" class="hidden absolute inset-0 bg-obsidian/95 flex flex-col items-center justify-center p-6 text-center z-20">
+            <div class="w-14 h-14 rounded-2xl bg-signal/15 border border-signal text-signal flex items-center justify-center font-mono font-bold text-xl mb-3">!</div>
+            <h3 class="font-display font-bold text-lg text-white mb-1">Локальный файл <code class="text-acid">клип.mp4</code> не обнаружен</h3>
+            <p class="text-xs sm:text-sm text-gray-400 max-w-md mb-4">
+              Убедитесь, что файл <span class="text-white font-mono">клип.mp4</span> находится в той же локальной папке, что и этот HTML-файл. Вы также можете переключиться на стандартный плеер браузера.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3">
+              <button id="retry-video-btn" type="button" class="interactive px-4 py-2 rounded-xl bg-acid text-void font-mono font-bold text-xs">
+                ↻ Повторить загрузку клип.mp4
+              </button>
+              <button id="native-controls-btn" type="button" class="interactive px-4 py-2 rounded-xl bg-surface border border-borderline text-gray-200 font-mono text-xs hover:border-cyber">
+                Включить стандартные контролы &lt;video&gt;
+              </button>
+            </div>
+          </div>
+
+          <!-- Top HUD Overlay inside Video -->
+          <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none font-mono text-[11px]">
+            <span class="px-2.5 py-1 rounded-lg bg-void/80 border border-borderline text-acid backdrop-blur-sm">
+              ● REC // клип.mp4
+            </span>
+            <span id="video-res-badge" class="px-2.5 py-1 rounded-lg bg-void/80 border border-borderline text-gray-300 backdrop-blur-sm">
+              LOCAL STREAM
+            </span>
+          </div>
+        </div>
+
+        <!-- Custom Cyber Control Deck -->
+        <div id="custom-video-controls" class="mt-4 bg-obsidian border border-borderline rounded-2xl p-3 sm:p-4 space-y-3">
+          <!-- Progress Scrubber -->
+          <div class="flex items-center gap-3">
+            <span id="video-current-time" class="font-mono text-xs text-acid w-12 text-right">00:00</span>
+            <input
+              id="video-progress"
+              type="range"
+              min="0"
+              max="100"
+              step="0.1"
+              value="0"
+              aria-label="Позиция воспроизведения"
+              class="cyber-slider interactive w-full cursor-pointer"
+              data-cursor="SEEK"
+            />
+            <span id="video-duration" class="font-mono text-xs text-gray-400 w-12">00:00</span>
+          </div>
+
+          <!-- Buttons Row -->
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <!-- Play/Pause -->
+              <button id="video-play-btn" type="button" class="interactive px-4 py-2 rounded-xl bg-acid text-void font-mono font-bold text-xs hover:bg-white transition-colors flex items-center gap-1.5" data-cursor="PLAY/PAUSE">
+                <span id="play-btn-icon">▶</span>
+                <span id="play-btn-text">PLAY</span>
+              </button>
+
+              <!-- Skip -5s / +5s -->
+              <button id="video-back-btn" type="button" class="interactive px-2.5 py-2 rounded-xl bg-surface border border-borderline hover:border-cyber text-gray-300 font-mono text-xs" title="Назад 5 сек">-5s</button>
+              <button id="video-fwd-btn" type="button" class="interactive px-2.5 py-2 rounded-xl bg-surface border border-borderline hover:border-cyber text-gray-300 font-mono text-xs" title="Вперед 5 сек">+5s</button>
+
+              <!-- Volume -->
+              <div class="flex items-center gap-2 bg-surface border border-borderline rounded-xl px-3 py-1.5 ml-1">
+                <button id="video-mute-btn" type="button" class="interactive text-sm text-cyber" title="Звук">🔊</button>
+                <input
+                  id="video-volume"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="1"
+                  aria-label="Громкость"
+                  class="cyber-slider interactive w-16 sm:w-24"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <!-- Playback Speed Selector -->
+              <div class="flex items-center gap-1 bg-surface border border-borderline rounded-xl p-1 font-mono text-xs">
+                <span class="text-gray-500 px-1.5 hidden sm:inline">SPD:</span>
+                <button type="button" class="speed-btn interactive px-2 py-1 rounded-lg text-gray-300 hover:text-white" data-speed="0.5">0.5x</button>
+                <button type="button" class="speed-btn interactive px-2 py-1 rounded-lg bg-acid text-void font-bold" data-speed="1">1x</button>
+                <button type="button" class="speed-btn interactive px-2 py-1 rounded-lg text-gray-300 hover:text-white" data-speed="1.5">1.5x</button>
+                <button type="button" class="speed-btn interactive px-2 py-1 rounded-lg text-gray-300 hover:text-white" data-speed="2">2x</button>
+              </div>
+
+              <!-- Direct file link -->
+              <a href="клип.mp4" target="_blank" class="interactive px-3 py-2 rounded-xl bg-surface border border-borderline hover:border-acid text-gray-300 hover:text-acid font-mono text-xs" title="Открыть клип.mp4 в новой вкладке" data-cursor="FILE">
+                ↗ Файл
+              </a>
+
+              <!-- Fullscreen -->
+              <button id="video-fs-btn" type="button" class="interactive px-3 py-2 rounded-xl bg-surface border border-borderline hover:border-cyber text-cyber font-mono text-xs font-bold" title="На весь экран" data-cursor="FULL">
+                ⛶ FULL
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE PROJECT ARCHIVE MATRIX -->
+    <section id="archive-grid" class="scroll-mt-24 space-y-6">
+      <!-- Header & Live Filter Bar -->
+      <div class="cyber-card rounded-3xl p-5 sm:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-borderline">
+          <div>
+            <div class="font-mono text-xs text-acid uppercase tracking-widest mb-1">// ARTIFACT_DIRECTORY_02</div>
+            <h2 class="font-display font-black text-2xl sm:text-3xl text-white">АРХИВ РАЗРАБОТОК</h2>
+          </div>
+
+          <!-- Live Search Input -->
+          <div class="relative w-full lg:w-80">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-acid">🔍</span>
+            <input
+              id="project-search"
+              type="text"
+              placeholder="Поиск по названию, стеку или файлу..."
+              class="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-void border border-borderline focus:border-acid focus:outline-none font-mono text-xs text-white placeholder-gray-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-4">
+          <div id="category-filters" class="flex flex-wrap gap-2 font-mono text-xs">
+            <button type="button" data-filter="all" class="filter-pill interactive px-4 py-2 rounded-xl bg-acid text-void font-bold transition-all" data-cursor="ALL">
+              ВСЕ МОДУЛИ (08)
+            </button>
+            <button type="button" data-filter="web" class="filter-pill interactive px-4 py-2 rounded-xl bg-obsidian border border-borderline text-gray-300 hover:border-acid transition-all" data-cursor="WEB">
+              ВЕБ-ПРИЛОЖЕНИЯ
+            </button>
+            <button type="button" data-filter="games" class="filter-pill interactive px-4 py-2 rounded-xl bg-obsidian border border-borderline text-gray-300 hover:border-acid transition-all" data-cursor="GAMES">
+              ИГРЫ И 3D
+            </button>
+            <button type="button" data-filter="python" class="filter-pill interactive px-4 py-2 rounded-xl bg-obsidian border border-borderline text-gray-300 hover:border-acid transition-all" data-cursor="PYTHON">
+              PYTHON / БОТЫ
+            </button>
+            <button type="button" data-filter="media" class="filter-pill interactive px-4 py-2 rounded-xl bg-obsidian border border-borderline text-gray-300 hover:border-acid transition-all" data-cursor="ART">
+              ГРАФИКА И ВИДЕО
+            </button>
+          </div>
+
+          <div id="filter-status" class="font-mono text-xs text-gray-400">
+            ОТОБРАЖЕНО: <span class="text-acid font-bold">8</span> / 8
+          </div>
+        </div>
+      </div>
+
+      <!-- Asymmetric Bento Grid of Projects (Rendered via JS + Exact File Paths) -->
+      <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+        <!-- Cards injected cleanly by JavaScript -->
+      </div>
+
+      <!-- Empty Search State -->
+      <div id="empty-search-state" class="hidden cyber-card rounded-3xl p-12 text-center">
+        <div class="font-mono text-3xl text-acid mb-2">[ 0 MATCHES ]</div>
+        <p class="text-gray-300 font-mono text-sm">По вашему запросу артефакты не найдены. Попробуйте сбросить фильтры.</p>
+        <button id="reset-filters-btn" type="button" class="interactive mt-4 px-5 py-2.5 rounded-xl bg-acid text-void font-mono font-bold text-xs">
+          СБРОСИТЬ ФИЛЬТРЫ
+        </button>
+      </div>
+    </section>
+
+    <!-- TERMINAL FILE MANIFEST & ARCHITECTURE SPEC -->
+    <section id="terminal-spec" class="scroll-mt-24 cyber-card rounded-3xl p-6 sm:p-8">
+      <div class="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-borderline mb-6">
+        <div>
+          <div class="font-mono text-xs text-cyber uppercase tracking-widest mb-1">// SYSTEM_MANIFEST_03</div>
+          <h2 class="font-display font-bold text-xl sm:text-2xl text-white">РЕЕСТР ЛОКАЛЬНЫХ ФАЙЛОВ ДИРЕКТОРИИ</h2>
+        </div>
+        <span class="font-mono text-xs px-3 py-1 rounded-xl bg-acid/10 border border-acid/40 text-acid">RELATIVE PATHS VERIFIED ✓</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse font-mono text-xs">
+          <thead>
+            <tr class="border-b border-borderline text-gray-400 uppercase">
+              <th class="py-3 px-3">ID</th>
+              <th class="py-3 px-3">Имя файла (локально)</th>
+              <th class="py-3 px-3">Модуль</th>
+              <th class="py-3 px-3">Стек</th>
+              <th class="py-3 px-3 text-right">Прямое действие</th>
+            </tr>
+          </thead>
+          <tbody id="manifest-table-body" class="divide-y divide-borderline/60 text-gray-200">
+            <!-- Populated automatically from exact file registry -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-borderline bg-obsidian/90 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-gray-400">
+      <div class="flex items-center gap-2">
+        <span class="text-acid font-bold">ITMouse</span>
+        <span>// ORBITAL ARCHIVE PORTFOLIO</span>
+      </div>
+      <div>
+        LOCAL BUNDLE EDITION • ALL RELATIVE LINKS ACTIVE
+      </div>
+    </div>
+  </footer>
+
+  <!-- INTERACTIVE PREVIEW MODAL (IFRAME / LIGHTBOX / PYTHON CODE VIEWER) -->
+  <div id="preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-2 sm:p-6 bg-void/90 backdrop-blur-md">
+    <div class="w-full max-w-6xl h-[92vh] bg-obsidian border-2 border-acid rounded-3xl shadow-[0_0_60px_rgba(204,255,0,0.2)] flex flex-col overflow-hidden">
+      <!-- Modal Top Window Bar -->
+      <div class="px-4 sm:px-6 py-3.5 bg-surface border-b border-borderline flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-signal"></span>
+            <span class="w-3 h-3 rounded-full bg-amber"></span>
+            <span class="w-3 h-3 rounded-full bg-acid"></span>
+          </div>
+          <div class="truncate">
+            <span id="modal-title" class="font-display font-bold text-sm sm:text-base text-white">Предпросмотр</span>
+            <span id="modal-filename" class="ml-2 font-mono text-xs text-acid bg-void px-2 py-0.5 rounded border border-borderline">file.html</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Direct link to open in full screen / new tab -->
+          <a id="modal-external-link" href="#" target="_blank" class="interactive px-3.5 py-2 rounded-xl bg-acid text-void font-mono font-bold text-xs hover:bg-white transition-colors flex items-center gap-1.5" data-cursor="NEW TAB">
+            <span>↗ Открыть на весь экран</span>
+          </a>
+
+          <button id="modal-close-btn" type="button" class="interactive px-3.5 py-2 rounded-xl bg-void border border-borderline hover:border-signal text-gray-200 hover:text-signal font-mono font-bold text-xs transition-colors" data-cursor="CLOSE">
+            ✕ ESC
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Dynamic Body -->
+      <div id="modal-body" class="flex-1 relative bg-void overflow-auto">
+        <!-- iframe, lightbox image, or Python inspector injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="cyber-toast" class="fixed bottom-5 right-5 z-50 pointer-events-none translate-y-20 opacity-0 transition-all duration-300">
+    <div class="px-4 py-3 rounded-2xl bg-obsidian border border-acid text-white font-mono text-xs shadow-[4px_4px_0px_#CCFF00] flex items-center gap-2.5">
+      <span class="text-acid">⚡</span>
+      <span id="cyber-toast-text">SYSTEM READY</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * =========================================================================
+     * 1. EXACT PROJECT REGISTRY (STRICT RELATIVE FILENAMES)
+     * =========================================================================
+     */
+    const PROJECTS = [
+      {
+        id: '01',
+        title: '3D Flight Simulator',
+        subtitle: 'Авиасимулятор на Three.js с авиагоризонтом',
+        file: 'симулятор полетов.html',
+        type: 'html',
+        categories: ['games', 'web'],
+        spanClass: 'lg:col-span-7',
+        accent: 'acid',
+        badge: '3D // WEBGL / THREE.JS',
+        description: 'Полноценный 3D-симулятор полёта с расчётом аэродинамики, тангажа и крена, интерактивным авиагоризонтом (HUD), высотомером и миссиями по пролёту сквозь воздушные шары.',
+        tags: ['Three.js', 'Физика полёта', 'HUD Авиагоризонт', '3D Мир'],
+        icon: '✈️'
+      },
+      {
+        id: '02',
+        title: 'Битва с Драконом Алгебры',
+        subtitle: 'Математическая RPG-игра с боссами и прокачкой',
+        file: 'битва с боссом.html',
+        type: 'html',
+        categories: ['games', 'web'],
+        spanClass: 'lg:col-span-5',
+        accent: 'cyber',
+        badge: 'RPG // MATH ENGINE',
+        description: 'Динамическая боевая RPG, где каждое решённое уравнение наносит критический урон боссу. Включает таймер хода, магазин артефактов, систему комбо и нарастающую сложность.',
+        tags: ['Game Loop', 'Алгебра', 'Магазин прокачки', 'Босс-файты'],
+        icon: '🐉'
+      },
+      {
+        id: '03',
+        title: 'BizSpark 100',
+        subtitle: 'Генератор-слот стартапов в стиле Cyberpunk Glass',
+        file: '100 бизнес идей.html',
+        type: 'html',
+        categories: ['web'],
+        spanClass: 'lg:col-span-4',
+        accent: 'acid',
+        badge: 'STARTUP // CYBER GLASS',
+        description: 'Интерактивный каталог из 100 проработанных бизнес-идей с механикой игрового слот-барабана, фильтрацией по нишам и пошаговыми чек-листами запуска MVP.',
+        tags: ['100 Идей', 'Слот-генератор', 'Чек-листы', 'Glassmorphism'],
+        icon: '💎'
+      },
+      {
+        id: '04',
+        title: 'PromptCraft Studio',
+        subtitle: 'Конструктор и тренажёр AI-промптов (RTF & CARE)',
+        file: 'генератор промтов.html',
+        type: 'html',
+        categories: ['web'],
+        spanClass: 'lg:col-span-4',
+        accent: 'cyber',
+        badge: 'AI // PROMPT ENGINEERING',
+        description: 'Профессиональная студия проектирования запросов к нейросетям по методологиям RTF (Role-Task-Format) и CARE с мгновенной сборкой, шаблонами и копированием.',
+        tags: ['RTF Framework', 'CARE', 'AI Промптинг', 'Конструктор'],
+        icon: '🧠'
+      },
+      {
+        id: '05',
+        title: 'Научная Викторина',
+        subtitle: 'Интеллектуальный квиз с нейросетью и Web Audio',
+        file: 'викторина.html',
+        type: 'html',
+        categories: ['games', 'web'],
+        spanClass: 'lg:col-span-4',
+        accent: 'acid',
+        badge: 'QUIZ // WEB AUDIO API',
+        description: 'Интерактивная викторина по 6 научным дисциплинам с живым фоновым графом нейросети на Canvas, синтезированными звуковыми эффектами и детальной аналитикой ответов.',
+        tags: ['6 Предметов', 'Web Audio API', 'Canvas Граф', 'Статистика'],
+        icon: '⚛️'
+      },
+      {
+        id: '06',
+        title: 'Мульти-Портал Приложений',
+        subtitle: '6 повседневных утилит в едином рабочем пространстве',
+        file: 'калькулятор.html',
+        type: 'html',
+        categories: ['web'],
+        spanClass: 'lg:col-span-6',
+        accent: 'cyber',
+        badge: 'UTILITY SUITE // 6-IN-1',
+        description: 'Комбайн продуктивности: калькулятор ИМТ, криптостойкий генератор паролей, конвертер физических величин, быстрые заметки, трекер привычек и интервальный таймер.',
+        tags: ['ИМТ', 'Пароли', 'Конвертер', 'Трекер привычек', 'Таймер'],
+        icon: '🎛️'
+      },
+      {
+        id: '07',
+        title: 'Telegram-бот расписания',
+        subtitle: 'Python бот школьного расписания и звонков',
+        file: 'botPacnicaHie.py',
+        secondaryFile: 'tg-bot.zip',
+        type: 'python',
+        categories: ['python'],
+        spanClass: 'lg:col-span-6',
+        accent: 'acid',
+        badge: 'PYTHON // TELEBOT API',
+        description: 'Telegram-бот на базе pyTelegramBotAPI (telebot) для просмотра и администрирования расписания уроков по дням недели и расписания звонков. Доступен исходный код и полный архив.',
+        tags: ['Python 3', 'pyTelegramBotAPI', 'botPacnicaHie.py', 'tg-bot.zip'],
+        icon: '🤖'
+      },
+      {
+        id: '08',
+        title: 'Путешествие капли воды',
+        subtitle: 'Образовательный научный комикс о круговороте',
+        file: 'комикс капля.jfif',
+        type: 'image',
+        categories: ['media'],
+        spanClass: 'lg:col-span-12',
+        accent: 'cyber',
+        badge: 'GRAPHIC NOVEL // SCIENCE ART',
+        description: 'Визуальная образовательная история, наглядно объясняющая этапы круговорота воды в природе (испарение, конденсация, осадки) через приключения главного героя — Капли.',
+        tags: ['Комикс', 'Образование', 'Иллюстрация', 'Лайтбокс'],
+        icon: '💧'
+      }
+    ];
+
+    // Python reference snippet for inspection modal
+    const PYTHON_BOT_PREVIEW_CODE = `# botPacnicaHie.py — Telegram-бот школьного расписания (pyTelegramBotAPI)
+import telebot
+from telebot import types
+import json
+import os
+
+TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
+bot = telebot.TeleBot(TOKEN)
+
+# Базовая структура расписания уроков и звонков
+SCHEDULE_DATA = {
+    "Понедельник": ["1. Разговоры о важном", "2. Алгебра", "3. Физика", "4. Информатика", "5. Литература"],
+    "Вторник":     ["1. Геометрия", "2. Русский язык", "3. История", "4. Английский язык", "5. Биология"],
+    "Среда":       ["1. Информатика", "2. Алгебра", "3. Химия", "4. Обществознание", "5. Физкультура"],
+    "Четверг":     ["1. Физика", "2. География", "3. Русский язык", "4. Английский язык", "5. ОБЗР"],
+    "Пятница":     ["1. Алгебра", "2. Информатика", "3. Литература", "4. История", "5. Проектная деятельность"]
+}
+
+BELLS_SCHEDULE = [
+    "1 урок: 08:30 – 09:15 (перемена 10 мин)",
+    "2 урок: 09:25 – 10:10 (перемена 20 мин)",
+    "3 урок: 10:30 – 11:15 (перемена 20 мин)",
+    "4 урок: 11:35 – 12:20 (перемена 10 мин)",
+    "5 урок: 12:30 – 13:15"
+]
+
+@bot.message_handler(commands=["start", "menu"])
+def send_welcome(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup.add(
+        types.KeyboardButton("📅 Расписание уроков"),
+        types.KeyboardButton("🔔 Расписание звонков"),
+        types.KeyboardButton("✏️ Редактировать день")
+    )
+    bot.send_message(
+        message.chat.id,
+        "👋 Привет! Я бот школьного расписания ITMouse.\\nВыбери нужный раздел:",
+        reply_markup=markup
+    )
+
+@bot.message_handler(func=lambda m: m.text == "🔔 Расписание звонков")
+def show_bells(message):
+    text = "🔔 *Расписание звонков:*\\n\\n" + "\\n".join(BELLS_SCHEDULE)
+    bot.send_message(message.chat.id, text, parse_mode="Markdown")
+
+if __name__ == "__main__":
+    print("Бот botPacnicaHie запущен...")
+    bot.infinity_polling()
+`;
+
+    /**
+     * =========================================================================
+     * 2. WEB AUDIO API TACTILE SOUND ENGINE (NO EXTERNAL ASSETS)
+     * =========================================================================
+     */
+    class TactileAudio {
+      constructor() {
+        this.enabled = true;
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playHover() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(620, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.035);
+          gain.gain.setValueAtTime(0.025, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.035);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.04);
+        } catch (e) {}
+      }
+
+      playClick() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(240, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(95, this.ctx.currentTime + 0.065);
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.075);
+        } catch (e) {}
+      }
+    }
+
+    const sfx = new TactileAudio();
+
+    /**
+     * =========================================================================
+     * 3. RENDER BENTO GRID & MANIFEST TABLE
+     * =========================================================================
+     */
+    const projectsContainer = document.getElementById('projects-container');
+    const manifestTableBody = document.getElementById('manifest-table-body');
+    const filterStatus = document.getElementById('filter-status');
+    const emptySearchState = document.getElementById('empty-search-state');
+
+    let activeCategory = 'all';
+    let searchQuery = '';
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderProjects() {
+      const filtered = PROJECTS.filter(p => {
+        const matchesCat = activeCategory === 'all' || p.categories.includes(activeCategory);
+        const q = searchQuery.trim().toLowerCase();
+        const matchesSearch = !q ||
+          p.title.toLowerCase().includes(q) ||
+          p.subtitle.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.file.toLowerCase().includes(q) ||
+          p.tags.some(t => t.toLowerCase().includes(q));
+        return matchesCat && matchesSearch;
+      });
+
+      filterStatus.innerHTML = `ОТОБРАЖЕНО: <span class="text-acid font-bold">${filtered.length}</span> / ${PROJECTS.length}`;
+
+      if (filtered.length === 0) {
+        projectsContainer.innerHTML = '';
+        emptySearchState.classList.remove('hidden');
+        return;
+      }
+
+      emptySearchState.classList.add('hidden');
+
+      projectsContainer.innerHTML = filtered.map(project => {
+        const isCyan = project.accent === 'cyber';
+        const cardVariant = isCyan ? 'cyber-card-cyan' : '';
+        const accentText = isCyan ? 'text-cyber' : 'text-acid';
+        const accentBg = isCyan ? 'bg-cyber text-void hover:bg-white' : 'bg-acid text-void hover:bg-white';
+        const badgeStyle = isCyan
+          ? 'bg-cyber/15 text-cyber border-cyber/40'
+          : 'bg-acid/15 text-acid border-acid/40';
+
+        // Special action buttons depending on file type
+        let actionButtonsHTML = '';
+        if (project.type === 'html') {
+          actionButtonsHTML = `
+            <button
+              type="button"
+              onclick="openPreviewModal('${project.id}')"
+              class="interactive flex-1 py-3 px-4 rounded-2xl ${accentBg} font-display font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              data-cursor="PREVIEW"
+            >
+              <span>▶ Предпросмотр</span>
+            </button>
+            <a
+              href="${project.file}"
+              target="_blank"
+              class="interactive py-3 px-4 rounded-2xl bg-void border border-borderline hover:border-white text-white font-mono text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+              title="Открыть ${project.file} в новой вкладке"
+              data-cursor="LAUNCH"
+            >
+              <span>↗ Открыть</span>
+            </a>
+          `;
+        } else if (project.type === 'python') {
+          actionButtonsHTML = `
+            <button
+              type="button"
+              onclick="openPreviewModal('${project.id}')"
+              class="interactive py-3 px-4 rounded-2xl ${accentBg} font-display font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              data-cursor="CODE"
+            >
+              <span>{ } Код и запуск</span>
+            </button>
+            <a
+              href="botPacnicaHie.py"
+              download="botPacnicaHie.py"
+              target="_blank"
+              class="interactive py-3 px-3.5 rounded-2xl bg-void border border-borderline hover:border-acid text-acid font-mono text-xs font-bold transition-colors flex items-center justify-center gap-1"
+              title="Открыть/скачать botPacnicaHie.py"
+              data-cursor=".PY"
+            >
+              <span>⬇ .py</span>
+            </a>
+            <a
+              href="tg-bot.zip"
+              download="tg-bot.zip"
+              class="interactive py-3 px-3.5 rounded-2xl bg-void border border-borderline hover:border-cyber text-cyber font-mono text-xs font-bold transition-colors flex items-center justify-center gap-1"
+              title="Скачать архив tg-bot.zip"
+              data-cursor=".ZIP"
+            >
+              <span>📦 tg-bot.zip</span>
+            </a>
+          `;
+        } else if (project.type === 'image') {
+          actionButtonsHTML = `
+            <button
+              type="button"
+              onclick="openPreviewModal('${project.id}')"
+              class="interactive py-3 px-5 rounded-2xl ${accentBg} font-display font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              data-cursor="LIGHTBOX"
+            >
+              <span>🔍 Открыть комикс в лайтбоксе</span>
+            </button>
+            <a
+              href="комикс капля.jfif"
+              target="_blank"
+              class="interactive py-3 px-4 rounded-2xl bg-void border border-borderline hover:border-cyber text-white font-mono text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+              data-cursor="RAW IMG"
+            >
+              <span>↗ Оригинал (.jfif)</span>
+            </a>
+          `;
+        }
+
+        // Optional inline visual preview thumbnail for the comic card
+        const mediaExtra = project.type === 'image' ? `
+          <div class="mt-4 lg:mt-0 lg:w-72 shrink-0 rounded-2xl overflow-hidden border border-borderline bg-void relative group cursor-pointer" onclick="openPreviewModal('${project.id}')">
+            <img
+              src="комикс капля.jfif"
+              alt="Образовательный комикс Путешествие капли воды в круговороте"
+              class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
+              onerror="this.src='https://placehold.co/600x360/0E1015/00F0FF?text=комикс+капля.jfif'"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent flex items-end p-3">
+              <span class="font-mono text-[10px] text-cyber bg-void/90 px-2 py-0.5 rounded border border-cyber/40">CLICK TO ZOOM</span>
+            </div>
+          </div>
+        ` : '';
+
+        return `
+          <article class="magnetic-card cyber-card ${cardVariant} ${project.spanClass} rounded-3xl p-6 flex flex-col justify-between bracket-box">
+            <div class="${project.type === 'image' ? 'flex flex-col lg:flex-row lg:items-center justify-between gap-6' : ''}">
+              <div class="flex-1">
+                <!-- Card Top Header -->
+                <div class="flex items-center justify-between gap-2 mb-4">
+                  <span class="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg border ${badgeStyle}">
+                    ${project.badge}
+                  </span>
+                  <span class="font-mono text-xs text-gray-500">UNIT_${project.id}</span>
+                </div>
+
+                <!-- Icon + Title -->
+                <div class="flex items-start gap-3.5 mb-3">
+                  <div class="w-12 h-12 rounded-2xl bg-void border border-borderline flex items-center justify-center text-2xl shrink-0">
+                    ${project.icon}
+                  </div>
+                  <div>
+                    <h3 class="font-display font-bold text-lg sm:text-xl text-white leading-snug">
+                      ${project.title}
+                    </h3>
+                    <p class="font-mono text-xs ${accentText} mt-0.5">${project.subtitle}</p>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <p class="text-sm text-gray-300 leading-relaxed mb-4">
+                  ${project.description}
+                </p>
+
+                <!-- File Pill -->
+                <div class="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-xl bg-void/90 border border-borderline font-mono text-[11px] text-gray-400 mb-4">
+                  <span>FILE:</span>
+                  <a href="${project.file}" target="_blank" class="text-white hover:text-acid underline decoration-borderline underline-offset-4">${project.file}</a>
+                  ${project.secondaryFile ? `<span>|</span><a href="${project.secondaryFile}" download class="text-cyber hover:underline">${project.secondaryFile}</a>` : ''}
+                </div>
+
+                <!-- Tech Tags -->
+                <div class="flex flex-wrap gap-1.5 mb-5">
+                  ${project.tags.map(tag => `
+                    <span class="px-2.5 py-1 rounded-lg bg-obsidian border border-borderline font-mono text-[11px] text-gray-300">
+                      #${tag}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+
+              ${mediaExtra}
+            </div>
+
+            <!-- Card Action Footer -->
+            <div class="pt-4 border-t border-borderline flex flex-wrap items-center gap-2.5">
+              ${actionButtonsHTML}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      bindInteractiveSoundAndTilt();
+    }
+
+    function renderManifestTable() {
+      const allFiles = [
+        { id: '00', file: 'клип.mp4', name: 'Видео-шоурил (встроенный кинотеатр)', stack: 'HTML5 Video / Custom HUD', href: 'клип.mp4' },
+        ...PROJECTS.map(p => ({
+          id: p.id,
+          file: p.file,
+          name: p.title,
+          stack: p.tags.slice(0, 2).join(', '),
+          href: p.file
+        })),
+        { id: '09', file: 'tg-bot.zip', name: 'Архив проекта Telegram-бота', stack: 'ZIP Archive / Python', href: 'tg-bot.zip' }
+      ];
+
+      manifestTableBody.innerHTML = allFiles.map(item => `
+        <tr class="hover:bg-surface/60 transition-colors">
+          <td class="py-3 px-3 text-acid font-bold">[${item.id}]</td>
+          <td class="py-3 px-3 text-white font-bold">${item.file}</td>
+          <td class="py-3 px-3 text-gray-300">${item.name}</td>
+          <td class="py-3 px-3 text-gray-400">${item.stack}</td>
+          <td class="py-3 px-3 text-right">
+            <a href="${item.href}" target="_blank" class="interactive inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-obsidian border border-borderline hover:border-acid text-acid transition-colors">
+              ↗ Открыть файл
+            </a>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    /**
+     * =========================================================================
+     * 4. MODAL PREVIEW ENGINE (IFRAME / PYTHON INSPECTOR / COMIC LIGHTBOX)
+     * =========================================================================
+     */
+    const previewModal = document.getElementById('preview-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalFilename = document.getElementById('modal-filename');
+    const modalExternalLink = document.getElementById('modal-external-link');
+    const modalBody = document.getElementById('modal-body');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    window.openPreviewModal = function(projectId) {
+      const project = PROJECTS.find(p => p.id === projectId);
+      if (!project) return;
+
+      sfx.playClick();
+      modalTitle.textContent = project.title;
+      modalFilename.textContent = project.file;
+      modalExternalLink.href = project.file;
+
+      if (project.type === 'html') {
+        modalBody.innerHTML = `
+          <div class="w-full h-full flex flex-col">
+            <div class="bg-obsidian px-4 py-2 border-b border-borderline font-mono text-[11px] text-gray-400 flex items-center justify-between">
+              <span>SANDBOX IFRAME: <strong class="text-white">${project.file}</strong></span>
+              <span>Если интерактив требует полный экран — нажмите кнопку справа вверху</span>
+            </div>
+            <iframe
+              src="${project.file}"
+              title="${project.title}"
+              class="w-full flex-1 bg-white border-0"
+              allow="autoplay; fullscreen"
+            ></iframe>
+          </div>
+        `;
+      } else if (project.type === 'python') {
+        modalBody.innerHTML = `
+          <div class="p-5 sm:p-8 max-w-4xl mx-auto space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-surface border border-borderline rounded-2xl p-5">
+              <div>
+                <div class="font-mono text-xs text-acid mb-1">// PYTHON TELEGRAM BOT PACKAGE</div>
+                <h3 class="font-display font-bold text-xl text-white">Запуск и исходный код: botPacnicaHie.py</h3>
+                <p class="text-xs text-gray-400 mt-1">Скачайте готовый архив <code class="text-cyber">tg-bot.zip</code> или отдельный скрипт <code class="text-acid">botPacnicaHie.py</code> для локального запуска.</p>
+              </div>
+              <div class="flex flex-wrap gap-2.5">
+                <a href="botPacnicaHie.py" download="botPacnicaHie.py" class="px-4 py-2.5 rounded-xl bg-acid text-void font-mono font-bold text-xs hover:bg-white transition-colors">
+                  ⬇ Скачать botPacnicaHie.py
+                </a>
+                <a href="tg-bot.zip" download="tg-bot.zip" class="px-4 py-2.5 rounded-xl bg-cyber text-void font-mono font-bold text-xs hover:bg-white transition-colors">
+                  📦 Скачать tg-bot.zip
+                </a>
+              </div>
+            </div>
+
+            <!-- Launch Instructions -->
+            <div class="bg-obsidian border border-borderline rounded-2xl p-5 space-y-3 font-mono text-xs">
+              <div class="text-cyber font-bold uppercase">// Инструкция по запуску в терминале:</div>
+              <div class="bg-void p-3.5 rounded-xl border border-borderline text-gray-200 space-y-1.5 select-all">
+                <div><span class="text-gray-500"># 1. Установите библиотеку pyTelegramBotAPI</span></div>
+                <div class="text-acid">pip install pyTelegramBotAPI</div>
+                <div class="pt-1"><span class="text-gray-500"># 2. Запустите бота из локальной папки</span></div>
+                <div class="text-acid">python botPacnicaHie.py</div>
+              </div>
+            </div>
+
+            <!-- Code Viewer -->
+            <div class="bg-obsidian border border-borderline rounded-2xl overflow-hidden">
+              <div class="px-4 py-2.5 bg-surface border-b border-borderline flex items-center justify-between font-mono text-xs">
+                <span class="text-gray-300">📄 Структура модуля <strong class="text-acid">botPacnicaHie.py</strong></span>
+                <button type="button" onclick="copyBotCode()" class="px-3 py-1 rounded-lg bg-void border border-borderline hover:border-acid text-acid text-[11px]">
+                  📋 Копировать шаблон
+                </button>
+              </div>
+              <pre id="python-code-block" class="p-4 text-xs font-mono text-gray-200 overflow-x-auto leading-relaxed">${escapeHtml(PYTHON_BOT_PREVIEW_CODE)}</pre>
+            </div>
+          </div>
+        `;
+      } else if (project.type === 'image') {
+        modalBody.innerHTML = `
+          <div class="w-full h-full flex flex-col items-center justify-center p-4 sm:p-8 bg-void">
+            <img
+              src="комикс капля.jfif"
+              alt="Образовательный комикс Путешествие капли воды в круговороте"
+              class="max-w-full max-h-[76vh] rounded-2xl border-2 border-borderline shadow-2xl object-contain"
+              onerror="this.src='https://placehold.co/900x600/0E1015/00F0FF?text=комикс+капля.jfif'"
+            />
+            <p class="mt-3 font-mono text-xs text-gray-400">
+              Файл: <span class="text-cyber">комикс капля.jfif</span> • Используйте кнопку «Открыть на весь экран» для максимального масштаба
+            </p>
+          </div>
+        `;
+      }
+
+      previewModal.classList.remove('hidden');
+      previewModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    };
+
+    function closePreviewModal() {
+      sfx.playClick();
+      previewModal.classList.add('hidden');
+      previewModal.classList.remove('flex');
+      modalBody.innerHTML = '';
+      document.body.style.overflow = '';
+    }
+
+    modalCloseBtn.addEventListener('click', closePreviewModal);
+    previewModal.addEventListener('click', (e) => {
+      if (e.target === previewModal) closePreviewModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !previewModal.classList.contains('hidden')) {
+        closePreviewModal();
+      }
+    });
+
+    window.copyBotCode = function() {
+      const textarea = document.createElement('textarea');
+      textarea.value = PYTHON_BOT_PREVIEW_CODE;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Код botPacnicaHie.py скопирован в буфер обмена');
+      } catch (err) {
+        showToast('Не удалось скопировать код');
+      }
+      document.body.removeChild(textarea);
+    };
+
+    /**
+     * =========================================================================
+     * 5. CUSTOM VIDEO PLAYER FOR "клип.mp4"
+     * =========================================================================
+     */
+    const video = document.getElementById('main-video');
+    const videoWrapper = document.getElementById('video-wrapper');
+    const videoCenterPlay = document.getElementById('video-center-play');
+    const videoPlayBtn = document.getElementById('video-play-btn');
+    const playBtnIcon = document.getElementById('play-btn-icon');
+    const playBtnText = document.getElementById('play-btn-text');
+    const videoProgress = document.getElementById('video-progress');
+    const videoCurrentTime = document.getElementById('video-current-time');
+    const videoDuration = document.getElementById('video-duration');
+    const videoMuteBtn = document.getElementById('video-mute-btn');
+    const videoVolume = document.getElementById('video-volume');
+    const videoBackBtn = document.getElementById('video-back-btn');
+    const videoFwdBtn = document.getElementById('video-fwd-btn');
+    const videoFsBtn = document.getElementById('video-fs-btn');
+    const speedBtns = document.querySelectorAll('.speed-btn');
+    const videoFallback = document.getElementById('video-fallback');
+    const retryVideoBtn = document.getElementById('retry-video-btn');
+    const nativeControlsBtn = document.getElementById('native-controls-btn');
+    const customVideoControls = document.getElementById('custom-video-controls');
+    const videoResBadge = document.getElementById('video-res-badge');
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || sec < 0) return '00:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function toggleVideoPlay() {
+      sfx.playClick();
+      if (video.paused || video.ended) {
+        video.play().catch(() => {
+          videoFallback.classList.remove('hidden');
+        });
+      } else {
+        video.pause();
+      }
+    }
+
+    videoCenterPlay.addEventListener('click', toggleVideoPlay);
+    videoPlayBtn.addEventListener('click', toggleVideoPlay);
+    video.addEventListener('click', toggleVideoPlay);
+
+    video.addEventListener('play', () => {
+      videoCenterPlay.classList.add('opacity-0', 'pointer-events-none');
+      playBtnIcon.textContent = '⏸';
+      playBtnText.textContent = 'PAUSE';
+    });
+
+    video.addEventListener('pause', () => {
+      videoCenterPlay.classList.remove('opacity-0', 'pointer-events-none');
+      playBtnIcon.textContent = '▶';
+      playBtnText.textContent = 'PLAY';
+    });
+
+    video.addEventListener('loadedmetadata', () => {
+      videoFallback.classList.add('hidden');
+      videoDuration.textContent = formatTime(video.duration);
+      if (video.videoWidth && video.videoHeight) {
+        videoResBadge.textContent = `${video.videoWidth}×${video.videoHeight} MP4`;
+      }
+    });
+
+    video.addEventListener('timeupdate', () => {
+      if (video.duration) {
+        const pct = (video.currentTime / video.duration) * 100;
+        videoProgress.value = pct;
+        videoCurrentTime.textContent = formatTime(video.currentTime);
+      }
+    });
+
+    video.addEventListener('error', () => {
+      videoFallback.classList.remove('hidden');
+      videoCenterPlay.classList.add('hidden');
+    });
+
+    videoProgress.addEventListener('input', () => {
+      if (video.duration) {
+        video.currentTime = (videoProgress.value / 100) * video.duration;
+      }
+    });
+
+    videoVolume.addEventListener('input', () => {
+      video.volume = parseFloat(videoVolume.value);
+      video.muted = video.volume === 0;
+      videoMuteBtn.textContent = video.muted ? '🔇' : (video.volume < 0.5 ? '🔉' : '🔊');
+    });
+
+    videoMuteBtn.addEventListener('click', () => {
+      sfx.playClick();
+      video.muted = !video.muted;
+      videoMuteBtn.textContent = video.muted ? '🔇' : '🔊';
+    });
+
+    videoBackBtn.addEventListener('click', () => {
+      sfx.playClick();
+      video.currentTime = Math.max(0, video.currentTime - 5);
+    });
+
+    videoFwdBtn.addEventListener('click', () => {
+      sfx.playClick();
+      video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+    });
+
+    speedBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        sfx.playClick();
+        const spd = parseFloat(btn.dataset.speed);
+        video.playbackRate = spd;
+        speedBtns.forEach(b => {
+          b.classList.remove('bg-acid', 'text-void', 'font-bold');
+          b.classList.add('text-gray-300');
+        });
+        btn.classList.add('bg-acid', 'text-void', 'font-bold');
+        btn.classList.remove('text-gray-300');
+        showToast(`Скорость воспроизведения: ${spd}x`);
+      });
+    });
+
+    videoFsBtn.addEventListener('click', () => {
+      sfx.playClick();
+      if (!document.fullscreenElement) {
+        if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
+        else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    retryVideoBtn.addEventListener('click', () => {
+      sfx.playClick();
+      videoFallback.classList.add('hidden');
+      videoCenterPlay.classList.remove('hidden');
+      video.load();
+    });
+
+    nativeControlsBtn.addEventListener('click', () => {
+      sfx.playClick();
+      videoFallback.classList.add('hidden');
+      videoCenterPlay.classList.add('hidden');
+      customVideoControls.classList.add('hidden');
+      video.setAttribute('controls', 'controls');
+    });
+
+    /**
+     * =========================================================================
+     * 6. FILTERS, SEARCH, RANDOMIZER, CLOCK & TOAST
+     * =========================================================================
+     */
+    const filterPills = document.querySelectorAll('.filter-pill');
+    const searchInput = document.getElementById('project-search');
+    const resetFiltersBtn = document.getElementById('reset-filters-btn');
+    const randomLaunchBtn = document.getElementById('random-launch-btn');
+
+    filterPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        sfx.playClick();
+        activeCategory = pill.dataset.filter;
+        filterPills.forEach(p => {
+          p.classList.remove('bg-acid', 'text-void', 'font-bold');
+          p.classList.add('bg-obsidian', 'border', 'border-borderline', 'text-gray-300');
+        });
+        pill.classList.add('bg-acid', 'text-void', 'font-bold');
+        pill.classList.remove('bg-obsidian', 'border', 'border-borderline', 'text-gray-300');
+        renderProjects();
+      });
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderProjects();
+    });
+
+    resetFiltersBtn.addEventListener('click', () => {
+      sfx.playClick();
+      activeCategory = 'all';
+      searchQuery = '';
+      searchInput.value = '';
+      filterPills[0].click();
+    });
+
+    randomLaunchBtn.addEventListener('click', () => {
+      const randomProject = PROJECTS[Math.floor(Math.random() * PROJECTS.length)];
+      showToast(`Запуск модуля: ${randomProject.title}`);
+      openPreviewModal(randomProject.id);
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('cyber-toast');
+      const toastText = document.getElementById('cyber-toast-text');
+      toastText.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2800);
+    }
+
+    // Live Digital Clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('live-clock').textContent = now.toTimeString().split(' ')[0];
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Sound Toggle
+    const soundToggle = document.getElementById('sound-toggle');
+    const soundIcon = document.getElementById('sound-icon');
+    const soundLabel = document.getElementById('sound-label');
+
+    soundToggle.addEventListener('click', () => {
+      sfx.enabled = !sfx.enabled;
+      if (sfx.enabled) {
+        sfx.playClick();
+        soundIcon.textContent = '🔊';
+        soundLabel.textContent = 'SFX: ON';
+        showToast('Тактильный звук интерфейса включён');
+      } else {
+        soundIcon.textContent = '🔇';
+        soundLabel.textContent = 'SFX: OFF';
+        showToast('Звук интерфейса отключён');
+      }
+    });
+
+    /**
+     * =========================================================================
+     * 7. CUSTOM TACTILE CURSOR & MAGNETIC CARD TILT
+     * =========================================================================
+     */
+    const cursorDot = document.getElementById('custom-cursor-dot');
+    const cursorRing = document.getElementById('custom-cursor-ring');
+    const cursorLabel = document.getElementById('cursor-label');
+    const cursorToggle = document.getElementById('cursor-toggle');
+
+    let customCursorEnabled = window.matchMedia('(pointer: fine)').matches;
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let ringX = mouseX;
+    let ringY = mouseY;
+
+    if (customCursorEnabled) {
+      document.body.classList.add('custom-cursor-active');
+    }
+
+    cursorToggle.addEventListener('click', () => {
+      sfx.playClick();
+      customCursorEnabled = !customCursorEnabled;
+      if (customCursorEnabled) {
+        document.body.classList.add('custom-cursor-active');
+        cursorDot.style.display = '';
+        cursorRing.style.display = '';
+        showToast('Тактильный прицел активирован');
+      } else {
+        document.body.classList.remove('custom-cursor-active');
+        cursorDot.style.display = 'none';
+        cursorRing.style.display = 'none';
+        showToast('Стандартный курсор ОС');
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      document.documentElement.style.setProperty('--cursor-x', `${mouseX}px`);
+      document.documentElement.style.setProperty('--cursor-y', `${mouseY}px`);
+
+      if (customCursorEnabled) {
+        cursorDot.style.left = `${mouseX}px`;
+        cursorDot.style.top = `${mouseY}px`;
+      }
+    });
+
+    function animateCursorRing() {
+      if (customCursorEnabled) {
+        ringX += (mouseX - ringX) * 0.2;
+        ringY += (mouseY - ringY) * 0.2;
+        cursorRing.style.left = `${ringX}px`;
+        cursorRing.style.top = `${ringY}px`;
+      }
+      requestAnimationFrame(animateCursorRing);
+    }
+    requestAnimationFrame(animateCursorRing);
+
+    function bindInteractiveSoundAndTilt() {
+      // Hover sound & cursor morph
+      document.querySelectorAll('.interactive').forEach(el => {
+        if (el.dataset.bound) return;
+        el.dataset.bound = 'true';
+
+        el.addEventListener('mouseenter', () => {
+          sfx.playHover();
+          if (customCursorEnabled) {
+            cursorRing.classList.add('hover-target');
+            const label = el.dataset.cursor;
+            if (label) {
+              cursorLabel.textContent = label;
+              cursorLabel.classList.remove('opacity-0');
+            }
+          }
+        });
+
+        el.addEventListener('mouseleave', () => {
+          if (customCursorEnabled) {
+            cursorRing.classList.remove('hover-target');
+            cursorLabel.classList.add('opacity-0');
+          }
+        });
+      });
+
+      // Subtle 3D tilt on desktop bento cards
+      if (window.matchMedia('(pointer: fine)').matches) {
+        document.querySelectorAll('.magnetic-card').forEach(card => {
+          if (card.dataset.tiltBound) return;
+          card.dataset.tiltBound = 'true';
+
+          card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            card.style.transform = `perspective(1000px) rotateX(${(-y * 3.5).toFixed(2)}deg) rotateY(${(x * 3.5).toFixed(2)}deg) translateY(-2px)`;
+          });
+
+          card.addEventListener('mouseleave', () => {
+            card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+          });
+        });
+      }
+    }
+
+    // Initialize everything on load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderProjects();
+      renderManifestTable();
+      bindInteractiveSoundAndTilt();
+    });
+  </script>
+</body>
+</html>

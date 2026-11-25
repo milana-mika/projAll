@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конструктор промптов с прозрачными окнами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      /* Прозрачность 35% без размытия, чтобы просвечивали частицы */
+      --card-bg: rgba(15, 23, 42, 0.35);
+      --card-border: rgba(255, 255, 255, 0.2);
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --input-bg: rgba(15, 23, 42, 0.4);
+      --input-border: rgba(255, 255, 255, 0.25);
+      --chip-bg: rgba(255, 255, 255, 0.1);
+      --chip-hover: rgba(59, 130, 246, 0.3);
+      --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+      --particle-color: 59, 130, 246;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #cbd5e1;
+      --card-bg: rgba(255, 255, 255, 0.35);
+      --card-border: rgba(0, 0, 0, 0.15);
+      --text-main: #0f172a;
+      --text-muted: #334155;
+      --accent-blue: #2563eb;
+      --accent-purple: #7c3aed;
+      --accent-pink: #db2777;
+      --accent-green: #059669;
+      --accent-orange: #d97706;
+      --input-bg: rgba(255, 255, 255, 0.4);
+      --input-border: rgba(0, 0, 0, 0.2);
+      --chip-bg: rgba(0, 0, 0, 0.08);
+      --chip-hover: rgba(191, 219, 254, 0.8);
+      --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      --particle-color: 37, 99, 235;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* CANVAS ДЛЯ ЧАСТИЦ НЕЙРОСЕТИ */
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      position: relative; 
+      z-index: 1; 
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: white; font-size: 20px;
+    }
+    .logo h1 { font-size: 1.25rem; font-weight: 700; }
+
+    .controls { display: flex; align-items: center; gap: 16px; }
+
+    .opacity-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      background: var(--chip-bg);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .theme-toggle, .fw-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover, .fw-btn:hover { background: var(--chip-hover); }
+
+    .fw-selector {
+      display: flex;
+      background: var(--input-bg);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--input-border);
+    }
+    .fw-btn { border: none; border-radius: 6px; padding: 6px 12px; }
+    .fw-btn.active {
+      background: var(--accent-blue);
+      color: white;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .app-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ПРОЗРАЧНЫЕ КАРТОЧКИ БЕЗ BLUR-ФИЛЬТРА */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .presets-container {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .preset-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover { color: var(--text-main); border-color: var(--accent-blue); }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label-row {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+    label { font-size: 0.9rem; font-weight: 600; }
+    .fw-badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-r { background: rgba(59, 130, 246, 0.4); color: white; }
+    .badge-t { background: rgba(16, 185, 129, 0.4); color: white; }
+    .badge-c { background: rgba(245, 158, 11, 0.4); color: white; }
+    .badge-f { background: rgba(139, 92, 246, 0.4); color: white; }
+    .badge-e { background: rgba(236, 72, 153, 0.4); color: white; }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .quick-chips {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+    }
+    .chip {
+      font-size: 0.75rem;
+      background: var(--chip-bg);
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid var(--card-border);
+    }
+    .chip:hover { background: var(--chip-hover); color: var(--accent-blue); }
+
+    /* Шкала Силы Промпта */
+    .strength-meter { margin-bottom: 24px; }
+    .strength-header {
+      display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px;
+    }
+    .bar-bg {
+      height: 8px; background: var(--input-border); border-radius: 4px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #ef4444, var(--accent-orange), var(--accent-green));
+      transition: width 0.3s ease;
+    }
+    .hint-text { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; min-height: 20px; }
+
+    /* Прозрачный Терминал Вывода */
+    .terminal {
+      background: rgba(5, 8, 15, 0.4);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #f8fafc;
+      min-height: 320px;
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid var(--input-border);
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+    .kw-role { color: #c084fc; font-weight: 600; }
+    .kw-task { color: #34d399; font-weight: 600; }
+    .kw-context { color: #fbbf24; font-weight: 600; }
+    .kw-format { color: #60a5fa; font-weight: 600; }
+    .kw-neg { color: #f87171; font-weight: 600; }
+
+    .terminal-stats {
+      display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;
+    }
+
+    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      flex: 1; min-width: 120px;
+      padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent-blue); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--chip-bg); color: var(--text-main); border: 1px solid var(--card-border); }
+    .btn-secondary:hover { background: var(--chip-hover); }
+
+    .ai-links { display: flex; gap: 8px; margin-top: 12px; }
+    .ai-btn {
+      font-size: 0.75rem; padding: 6px 12px; border-radius: 6px;
+      text-decoration: none; color: var(--text-main); background: var(--chip-bg);
+      border: 1px solid var(--card-border); transition: all 0.2s;
+    }
+    .ai-btn:hover { color: var(--text-main); border-color: var(--accent-blue); }
+
+    .saved-list { margin-top: 16px; }
+    .saved-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: var(--input-bg); border-radius: 6px;
+      margin-bottom: 6px; font-size: 0.85rem;
+      border: 1px solid var(--card-border);
+    }
+    .saved-item-btn { background: none; border: none; color: var(--accent-blue); cursor: pointer; font-weight: 600; }
+  </style>
+</head>
+<body data-theme="dark">
+
+<!-- Canvas для рисования частиц нейросети -->
+<canvas id="particles-canvas"></canvas>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      <div>
+        <h1>PromptCraft Studio</h1>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Конструктор & Тренажер Промптов</div>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <!-- Регулятор прозрачности -->
+      <div class="opacity-control">
+        <span>Прозрачность:</span>
+        <input type="range" id="opacitySlider" min="0.1" max="0.9" step="0.05" value="0.35" style="width: 80px;" oninput="changeOpacity(this.value)">
+      </div>
+
+      <div class="fw-selector">
+        <button class="fw-btn active" onclick="setFramework('RTF')" id="fw-rtf">RTF</button>
+        <button class="fw-btn" onclick="setFramework('CARE')" id="fw-care">CARE</button>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Темная</button>
+    </div>
+  </header>
+
+  <div class="app-grid">
+    <!-- Левая колонка: Форма ввода -->
+    <div class="card">
+      <div class="card-title">
+        <span>Параметры промпта</span>
+      </div>
+
+      <div class="presets-container">
+        <span style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Пресеты:</span>
+        <button class="preset-btn" onclick="applyPreset('code')">💻 Написание кода</button>
+        <button class="preset-btn" onclick="applyPreset('essay')">📄 Статья / Эссе</button>
+        <button class="preset-btn" onclick="applyPreset('smm')">📱 Пост SMM</button>
+      </div>
+
+      <form id="prompt-form">
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="role">Роль (Кто ИИ?)</label>
+            <span class="fw-badge badge-r" id="badge-role">R</span>
+          </div>
+          <input type="text" id="role" placeholder="Например: Senior Python Developer" oninput="update()">
+          <div class="quick-chips">
+            <span class="chip" onclick="setChip('role', 'Senior Frontend Dev')">+ Frontend Dev</span>
+            <span class="chip" onclick="setChip('role', 'Маркетолог-стратег')">+ Маркетолог</span>
+            <span class="chip" onclick="setChip('role', 'Опытный методист')">+ Методист</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="task" id="label-task">Задача (Action / Task)</label>
+            <span class="fw-badge badge-t" id="badge-task">T</span>
+          </div>
+          <textarea id="task" placeholder="Что именно нужно сделать?" oninput="update()"></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="context">Контекст и Аудитория</label>
+            <span class="fw-badge badge-c" id="badge-context">C</span>
+          </div>
+          <textarea id="context" placeholder="Для кого ответ? Какая текущая ситуация?" oninput="update()"></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="format">Формат ответа</label>
+            <span class="fw-badge badge-f" id="badge-format">F</span>
+          </div>
+          <select id="format" onchange="update()">
+            <option value="Markdown список с выделением главного">Markdown список</option>
+            <option value="Таблица с сопоставлением характеристик">Сравнительная Таблица</option>
+            <option value="Чистый код с комментариями">Чистый код</option>
+            <option value="Пошаговое руководство (Step-by-step)">Пошаговый чек-лист</option>
+            <option value="Короткий и лаконичный текст">Краткий текст</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="constraints">Ограничения / Негативный промпт</label>
+            <span class="fw-badge badge-e">N</span>
+          </div>
+          <input type="text" id="constraints" placeholder="Чего делать нельзя? (Без «воды», без вступлений)" oninput="update()">
+          <div class="quick-chips">
+            <span class="chip" onclick="setChip('constraints', 'Без вводных фраз и приветствий')">+ Без вступлений</span>
+            <span class="chip" onclick="setChip('constraints', 'Максимально кратко, только суть')">+ Кратко</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="examples">Пример (Few-Shot Example)</label>
+            <span class="fw-badge badge-e" id="badge-examples">E</span>
+          </div>
+          <textarea id="examples" placeholder="Пример желаемого ответа..." oninput="update()"></textarea>
+        </div>
+      </form>
+    </div>
+
+    <!-- Правая колонка: Терминал и Результат -->
+    <div class="card">
+      <div class="card-title">
+        <span>Предпросмотр</span>
+        <span id="strength-val" style="font-size: 0.9rem; color: var(--accent-green);">0%</span>
+      </div>
+
+      <div class="strength-meter">
+        <div class="bar-bg"><div class="bar-fill" id="strength-bar"></div></div>
+        <div class="hint-text" id="strength-hint">Заполните поля для оценки силы промпта</div>
+      </div>
+
+      <div class="terminal" id="terminal-output"></div>
+
+      <div class="terminal-stats">
+        <span>Символов: <strong id="cnt-chars">0</strong></span>
+        <span>Слов: <strong id="cnt-words">0</strong></span>
+        <span>Токенов (~): <strong id="cnt-tokens">0</strong></span>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="copyPrompt()">📋 Скопировать</button>
+        <button class="btn btn-secondary" onclick="savePrompt()">💾 Сохранить</button>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Быстрый переход в AI:</span>
+        <div class="ai-links">
+          <a href="https://chatgpt.com" target="_blank" class="ai-btn" onclick="copyPrompt()">ChatGPT ↗</a>
+          <a href="https://claude.ai" target="_blank" class="ai-btn" onclick="copyPrompt()">Claude ↗</a>
+          <a href="https://perplexity.ai" target="_blank" class="ai-btn" onclick="copyPrompt()">Perplexity ↗</a>
+        </div>
+      </div>
+
+      <div class="saved-list" id="saved-list">
+        <!-- Сохраненные шаблоны -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* =========================================================
+   * УПРАВЛЕНИЕ ПРОЗРАЧНОСТЬЮ И ТЕМАТИКОЙ
+   * ========================================================= */
+  function changeOpacity(val) {
+    const isDark = document.body.getAttribute('data-theme') === 'dark';
+    const rgb = isDark ? '15, 23, 42' : '255, 255, 255';
+    document.documentElement.style.setProperty('--card-bg', `rgba(${rgb}, ${val})`);
+  }
+
+  function toggleTheme() {
+    const body = document.body;
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-btn').innerText = isDark ? '☀️ Светлая' : '🌙 Темная';
+    changeOpacity(document.getElementById('opacitySlider').value);
+  }
+
+  /* =========================================================
+   * АНИМАЦИЯ ЧАСТИЦ НЕЙРОСЕТИ (CANVAS PARTICLES)
+   * ========================================================= */
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    initParticles();
+  });
+
+  const mouse = { x: null, y: null, radius: 150 };
+
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  window.addEventListener('mouseleave', () => {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.vx = (Math.random() - 0.5) * 0.8;
+      this.vy = (Math.random() - 0.5) * 0.8;
+      this.radius = Math.random() * 2 + 1;
+    }
+
+    update() {
+      if (this.x < 0 || this.x > width) this.vx *= -1;
+      if (this.y < 0 || this.y > height) this.vy *= -1;
+
+      this.x += this.vx;
+      this.y += this.vy;
+    }
+
+    draw(colorRgb) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${colorRgb}, 0.9)`;
+      ctx.fill();
+    }
+  }
+
+  let particlesArray = [];
+
+  function initParticles() {
+    particlesArray = [];
+    const numberOfParticles = Math.floor((width * height) / 10000);
+    for (let i = 0; i < numberOfParticles; i++) {
+      particlesArray.push(new Particle());
+    }
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, width, height);
+
+    const rawColor = getComputedStyle(document.body).getPropertyValue('--particle-color').trim() || '59, 130, 246';
+
+    for (let i = 0; i < particlesArray.length; i++) {
+      particlesArray[i].update();
+      particlesArray[i].draw(rawColor);
+
+      for (let j = i + 1; j < particlesArray.length; j++) {
+        const dx = particlesArray[i].x - particlesArray[j].x;
+        const dy = particlesArray[i].y - particlesArray[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 120) {
+          const alpha = 1 - (dist / 120);
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${rawColor}, ${alpha * 0.4})`;
+          ctx.lineWidth = 1;
+          ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+          ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+          ctx.stroke();
+        }
+      }
+
+      if (mouse.x !== null && mouse.y !== null) {
+        const dx = particlesArray[i].x - mouse.x;
+        const dy = particlesArray[i].y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < mouse.radius) {
+          const alpha = 1 - (dist / mouse.radius);
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${rawColor}, ${alpha * 0.6})`;
+          ctx.lineWidth = 1.2;
+          ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(animateParticles);
+  }
+
+  initParticles();
+  animateParticles();
+
+  /* =========================================================
+   * ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ (RTF / CARE)
+   * ========================================================= */
+  let currentFramework = 'RTF';
+
+  const presets = {
+    code: {
+      role: "Senior Fullstack Developer",
+      task: "Написать рефакторинг функции обработки данных с учетом асинхронности.",
+      context: "Node.js приложение под высокой нагрузкой. Важна производительность.",
+      format: "Чистый код с комментариями",
+      constraints: "Без использования сторонних библиотек. Использовать async/await.",
+      examples: "async function getData() { ... }"
+    },
+    essay: {
+      role: "Профессиональный копирайтер и редактор",
+      task: "Написать информативную статью о пользе сна для продуктивности.",
+      context: "Блог о саморазвитии для IT-специалистов.",
+      format: "Markdown список с выделением главного",
+      constraints: "Избегать сложных медицинских терминов, писать просто и доступно.",
+      examples: "Заголовок: Как 8 часов сна меняют ваш код..."
+    },
+    smm: {
+      role: "SMM-менеджер бренда",
+      task: "Создать анонс выхода нового обновления мобильного приложения.",
+      context: "Подписчики в Telegram, молодые профессионалы 20-35 лет.",
+      format: "Короткий и лаконичный текст",
+      constraints: "Использовать не более 3 эмодзи. Добавить призыв к действию (CTA).",
+      examples: "🚀 Встречайте версию 2.0! Что нового: ..."
+    }
+  };
+
+  function setFramework(fw) {
+    currentFramework = fw;
+    document.getElementById('fw-rtf').classList.toggle('active', fw === 'RTF');
+    document.getElementById('fw-care').classList.toggle('active', fw === 'CARE');
+    
+    if (fw === 'CARE') {
+      document.getElementById('badge-role').innerText = 'C';
+      document.getElementById('badge-task').innerText = 'A';
+      document.getElementById('badge-context').innerText = 'R';
+      document.getElementById('badge-format').innerText = 'E';
+    } else {
+      document.getElementById('badge-role').innerText = 'R';
+      document.getElementById('badge-task').innerText = 'T';
+      document.getElementById('badge-context').innerText = 'C';
+      document.getElementById('badge-format').innerText = 'F';
+    }
+    update();
+  }
+
+  function setChip(fieldId, value) {
+    document.getElementById(fieldId).value = value;
+    update();
+  }
+
+  function applyPreset(name) {
+    const data = presets[name];
+    if (!data) return;
+    Object.keys(data).forEach(key => {
+      if (document.getElementById(key)) {
+        document.getElementById(key).value = data[key];
+      }
+    });
+    update();
+  }
+
+  function update() {
+    const role = document.getElementById('role').value.trim();
+    const task = document.getElementById('task').value.trim();
+    const context = document.getElementById('context').value.trim();
+    const format = document.getElementById('format').value;
+    const constraints = document.getElementById('constraints').value.trim();
+    const examples = document.getElementById('examples').value.trim();
+
+    let textHTML = '';
+    let rawText = '';
+
+    if (role) {
+      textHTML += `<span class="kw-role">[ROLE]:</span> ${role}\n\n`;
+      rawText += `[ROLE]: ${role}\n\n`;
+    }
+    if (task) {
+      textHTML += `<span class="kw-task">[ACTION/TASK]:</span> ${task}\n\n`;
+      rawText += `[ACTION/TASK]: ${task}\n\n`;
+    }
+    if (context) {
+      textHTML += `<span class="kw-context">[CONTEXT]:</span> ${context}\n\n`;
+      rawText += `[CONTEXT]: ${context}\n\n`;
+    }
+    if (format) {
+      textHTML += `<span class="kw-format">[FORMAT]:</span> ${format}\n\n`;
+      rawText += `[FORMAT]: ${format}\n\n`;
+    }
+    if (constraints) {
+      textHTML += `<span class="kw-neg">[CONSTRAINTS]:</span> ${constraints}\n\n`;
+      rawText += `[CONSTRAINTS]: ${constraints}\n\n`;
+    }
+    if (examples) {
+      textHTML += `<span>[EXAMPLES]:</span>\n${examples}\n\n`;
+      rawText += `[EXAMPLES]:\n${examples}\n\n`;
+    }
+
+    document.getElementById('terminal-output').innerHTML = textHTML || 'Заполните поля слева для генерации промпта...';
+    window.currentRawPrompt = rawText;
+
+    const chars = rawText.length;
+    const words = rawText.trim() ? rawText.trim().split(/\s+/).length : 0;
+    const tokens = Math.round(words * 1.3);
+
+    document.getElementById('cnt-chars').innerText = chars;
+    document.getElementById('cnt-words').innerText = words;
+    document.getElementById('cnt-tokens').innerText = tokens;
+
+    let score = 0;
+    let hints = [];
+
+    if (task) score += 30; else hints.push("Укажите основную задачу");
+    if (role) score += 20; else hints.push("Добавьте роль ИИ");
+    if (context) score += 20; else hints.push("Опишите контекст");
+    if (format) score += 15;
+    if (constraints) score += 15; else hints.push("Укажите ограничения");
+
+    document.getElementById('strength-bar').style.width = score + '%';
+    document.getElementById('strength-val').innerText = score + '%';
+    document.getElementById('strength-hint').innerText = hints.length > 0 ? '💡 Совет: ' + hints.join(', ') : '🔥 Отличный, сбалансированный промпт!';
+  }
+
+  function copyPrompt() {
+    if (!window.currentRawPrompt) return;
+    navigator.clipboard.writeText(window.currentRawPrompt);
+    alert('Промпт скопирован в буфер обмена!');
+  }
+
+  function savePrompt() {
+    if (!window.currentRawPrompt) return;
+    let saved = JSON.parse(localStorage.getItem('saved_prompts') || '[]');
+    saved.push({
+      id: Date.now(),
+      title: document.getElementById('role').value || 'Промпт',
+      text: window.currentRawPrompt
+    });
+    localStorage.setItem('saved_prompts', JSON.stringify(saved));
+    renderSaved();
+  }
+
+  function renderSaved() {
+    let saved = JSON.parse(localStorage.getItem('saved_prompts') || '[]');
+    const container = document.getElementById('saved-list');
+    if (saved.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Сохраненные:</div>' +
+      saved.map(item => `
+        <div class="saved-item">
+          <span>${item.title}</span>
+          <button class="saved-item-btn" onclick="loadSaved(${item.id})">Загрузить</button>
+        </div>
+      `).join('');
+  }
+
+  function loadSaved(id) {
+    let saved = JSON.parse(localStorage.getItem('saved_prompts') || '[]');
+    let item = saved.find(x => x.id === id);
+    if (item) {
+      navigator.clipboard.writeText(item.text);
+      alert('Скопировано в буфер!');
+    }
+  }
+
+  update();
+  renderSaved();
+</script>
+</body>
+</html>
